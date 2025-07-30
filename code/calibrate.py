@@ -1,10 +1,8 @@
 import cv2
-import cv2.aruco as aruco
-import numpy as np
 from file_handler import *
 
 NUM_RINGS = 6
-canvas_size = (500, 500)
+canvas_size = None
 
 rings = []
 current_ring = 0
@@ -21,18 +19,7 @@ line_scale = 0.0
 line_stretch_x = 0.0
 line_stretch_y = 0.0
 
-def get_marker_centers(corners, ids):
-    marker_dict = {}
-    for i, marker_id in enumerate(ids.flatten()):
-        pts = corners[i][0]
-        center = np.mean(pts, axis=0)
-        marker_dict[marker_id] = center
-    return marker_dict
-
-def get_marker_corners_dict(corners, ids):
-    return {id_[0]: c[0] for c, id_ in zip(corners, ids)}
-
-def draw_virtual_canvas(marker_preview=None, show_lines=False):
+def draw_virtual_canvas(show_lines=False):
     canvas = np.zeros((canvas_size[1], canvas_size[0], 3), dtype=np.uint8)
 
     for i in range(current_ring + 1):
@@ -59,11 +46,6 @@ def draw_virtual_canvas(marker_preview=None, show_lines=False):
                 cv2.line(canvas, (int(cx) + int(line_offset_x), int(cy) + int(line_offset_y)), (x, y), (255, 0, 0), 1)
             else:
                 cv2.line(canvas, (int(cx) + int(line_offset_x), int(cy) + int(line_offset_y)), (x, y), (100, 100, 255), 1)
-    if marker_preview:
-        for id_, pt in marker_preview.items():
-            x, y = int(pt[0] / 2), int(pt[1] / 2)
-            cv2.circle(canvas, (x, y), 5, (0, 0, 255), -1)
-            cv2.putText(canvas, f"ID {id_}", (x+6, y-6), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
 
     return canvas
 
@@ -169,23 +151,29 @@ def setattr_nonlocal(name, value):
     globals()[name] = value
 
 def detect_and_run():
-    global current_ring, last_valid_markers, auto_generated, mode, line_stretch_y, line_stretch_x
-    global line_offset_x, line_offset_y, line_rotation, line_scale, rings, rings_loaded
-
-    last_valid_corners = {}
+    global current_ring, auto_generated, mode, line_stretch_y, line_stretch_x
+    global line_offset_x, line_offset_y, line_rotation, line_scale, rings, rings_loaded, canvas_size
 
     cam_index = select_camera()
     if cam_index is None:
         return
 
     cap = cv2.VideoCapture(cam_index)
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to read from camera.")
+        return
+
+    canvas_size = (frame.shape[1], frame.shape[0])
+
     rings, rings_loaded = load_rings()
     line_rotation, line_offset_x, line_offset_y, line_scale, line_stretch_x, line_stretch_y = load_lines()
 
-    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
-    parameters = aruco.DetectorParameters()
-    parameters.cornerRefinementMethod = aruco.CORNER_REFINE_SUBPIX
-    detector = aruco.ArucoDetector(aruco_dict, parameters)
+    if not rings_loaded:
+        center_x = canvas_size[0] // 2
+        center_y = canvas_size[1] // 2
+        rings = [np.array([center_x, center_y, 100, 1.0, 1.0], dtype=np.float32)] + [np.zeros(5, dtype=np.float32) for _ in range(NUM_RINGS - 1)]
+        print("Starting ring placed in canvas center.")
 
     print_controls()
 
@@ -194,35 +182,29 @@ def detect_and_run():
         if not ret:
             break
 
-        corners, ids, _ = detector.detectMarkers(frame)
+        virtual_canvas = draw_virtual_canvas(show_lines=(mode == "lines"))
+        canvas_h, canvas_w = virtual_canvas.shape[:2]
+        frame_h, frame_w = frame.shape[:2]
 
-        if ids is not None and len(ids) >= 4:
-            marker_centers = get_marker_centers(corners, ids)
-            marker_corners = get_marker_corners_dict(corners, ids)
+        y_offset = (frame_h - canvas_h) // 2
+        x_offset = (frame_w - canvas_w) // 2
 
-            if all(mid in marker_centers for mid in [0, 1, 2, 3]):
-                last_valid_markers = marker_centers.copy()
-                last_valid_corners = marker_corners.copy()
+        y_start = max(y_offset, 0)
+        x_start = max(x_offset, 0)
+        y_end = min(y_start + canvas_h, frame_h)
+        x_end = min(x_start + canvas_w, frame_w)
 
-        virtual_canvas = draw_virtual_canvas(last_valid_markers, show_lines=(mode == "lines"))
+        canvas_y_start = y_start - y_offset
+        canvas_x_start = x_start - x_offset
+        canvas_y_end = canvas_y_start + (y_end - y_start)
+        canvas_x_end = canvas_x_start + (x_end - x_start)
 
-        if all(mid in last_valid_corners for mid in [0, 1, 2, 3]):
-            src_pts = np.array([[0, 0], [canvas_size[0], 0], [canvas_size[0], canvas_size[1]], [0, canvas_size[1]]], dtype=np.float32)
-            dst_pts = np.array([
-                last_valid_corners[0][0],
-                last_valid_corners[1][1],
-                last_valid_corners[3][2],
-                last_valid_corners[2][3],
-            ], dtype=np.float32)
+        roi = frame[y_start:y_end, x_start:x_end]
+        virtual_canvas_roi = virtual_canvas[canvas_y_start:canvas_y_end, canvas_x_start:canvas_x_end]
+        mask = virtual_canvas_roi[:, :, 1] > 0
 
-            matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-            warped = cv2.warpPerspective(virtual_canvas, matrix, (frame.shape[1], frame.shape[0]))
-
-            mask = warped[:, :, 1] > 0
-            frame[mask] = warped[mask]
-
-        if ids is not None:
-            aruco.drawDetectedMarkers(frame, corners, ids)
+        roi[mask] = virtual_canvas_roi[mask]
+        frame[y_start:y_end, x_start:x_end] = roi
 
         cv2.imshow("Live Feed with Rings", frame)
         cv2.imshow("Virtual Canvas Preview", virtual_canvas)
