@@ -1,5 +1,6 @@
 import cv2
 from file_handler import *
+from draw_canvas import draw_ellipses, draw_sector_lines
 
 NUM_RINGS = 6
 canvas_size = None
@@ -21,33 +22,14 @@ line_stretch_y = 0.0
 
 def draw_virtual_canvas(show_lines=False):
     canvas = np.zeros((canvas_size[1], canvas_size[0], 3), dtype=np.uint8)
-
-    for i in range(current_ring + 1):
-        ring = rings[i]
-        color = (0, 255, 0) if i == current_ring else (255, 255, 255)
-        center = tuple(ring[0:2].astype(int))
-        axes = (int(ring[2] * ring[3]), int(ring[2] * ring[4]))
-        cv2.ellipse(canvas, center, axes, 0, 0, 360, color, 2)
+    draw_ellipses(canvas, rings[:current_ring + 1], current_ring=current_ring)
 
     if show_lines:
-        outer_ring = rings[0]
-        cx, cy = outer_ring[0:2]
-        radius = outer_ring[2] * max(outer_ring[3], outer_ring[4])
-        for i in range(20):
-            angle = np.deg2rad(i * 18 + line_rotation - 90)
-
-            scaled_cos = np.cos(angle) * outer_ring[3] * line_scale * line_stretch_x
-            scaled_sin = np.sin(angle) * outer_ring[4] * line_scale * line_stretch_y
-
-            x = int(cx + radius * scaled_cos + line_offset_x)
-            y = int(cy + radius * scaled_sin + line_offset_y)
-
-            if i == 0:
-                cv2.line(canvas, (int(cx) + int(line_offset_x), int(cy) + int(line_offset_y)), (x, y), (255, 0, 0), 1)
-            else:
-                cv2.line(canvas, (int(cx) + int(line_offset_x), int(cy) + int(line_offset_y)), (x, y), (100, 100, 255), 1)
+        draw_sector_lines(canvas, rings[0], line_rotation, line_offset_x, line_offset_y,
+                          line_scale, line_stretch_x, line_stretch_y)
 
     return canvas
+
 
 def select_camera(max_cams=5):
     caps = []
@@ -236,7 +218,6 @@ def print_controls():
     print("    I/K     - Stretch Y")
     print("    J/L     - Stretch Y")
     print("  Q         - Quit")
-
 
 if __name__ == "__main__":
     detect_and_run()
