@@ -18,7 +18,7 @@ class scoreCreationObject(BaseModel):
 @router.post("/", response_model=scoreDto)
 async def score(score: scoreCreationObject):
     game = await Game.get(id=score.game)
-    returnScore = 0;
+    returnScore = 0
 
     if game.player1_id == score.player:
         game.player1Score = max(0, game.player1Score - score.score)
@@ -31,7 +31,14 @@ async def score(score: scoreCreationObject):
 
     await game.save()
 
-    return await Score.create(
+    score_obj = await Score.create(
+        player_id=score.player,
+        game_id=score.game,
+        score=score.score
+    )
+
+    return scoreDto(
+        id=score_obj.id,
         player=score.player,
         game=score.game,
         score=returnScore

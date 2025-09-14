@@ -2,7 +2,7 @@
 import { writable, get } from 'svelte/store';
 
 
-interface inputState {
+interface playerState {
 	players: (Player|null)[];
 }
 
@@ -11,7 +11,7 @@ interface Player {
 	name: string;
 }
 
-export const store = writable<inputState>({
+export const store = writable<playerState>({
 	players: [null, null]
 });
 
@@ -23,7 +23,7 @@ function getPlainPlayers(): (Player | null)[] {
   return players.map(p => p ? { ...p } : null);
 }
 
-export const inputState = {
+export const playerState = {
   subscribe: store.subscribe,
   update: store.update,
   set: store.set,

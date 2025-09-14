@@ -3,7 +3,7 @@
 	import Header from '../../comps/Header.svelte';
 	import StepCounter from '../../comps/StepCounter.svelte';
 	import Button from '../../comps/Button.svelte';
-	import { inputState } from '../../stores/inputStore.svelte';
+	import { playerState } from '../../stores/playerStore.svelte';
 
 	interface Player {
 		id: number;
@@ -40,7 +40,7 @@
     }else{
       searchTerm2 = player.name
     }
-		inputState.update((state) => {
+		playerState.update((state) => {
 			state.players[index] = player;
 			return state;
 		});
@@ -65,7 +65,6 @@
 	<h2>Enter Player Names:</h2>
 
 <div id="inputs">
-  <!-- Player 1 input -->
   <div class="player-input">
     <input
       type="text"
@@ -100,7 +99,6 @@
     {/if}
   </div>
 
-  <!-- Player 2 input -->
   <div class="player-input">
     <input
       type="text"

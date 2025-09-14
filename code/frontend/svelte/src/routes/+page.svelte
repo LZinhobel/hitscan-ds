@@ -1,5 +1,21 @@
 <script lang="ts">
 	import Button from '../comps/Button.svelte';
+  	import { rulesState } from '../stores/rulesStore.svelte';
+	
+	let selectedVariant = $state('standard')
+	let checked301 = $state(true);
+	let checked501 = $state(false)
+
+	function setRules(){
+		if(checked301){
+			rulesState.ruleset = '301';
+			rulesState.variant = selectedVariant;
+		}else{
+			rulesState.ruleset = '501';
+			rulesState.variant = selectedVariant;
+		}
+	}
+	
 </script>
 
 <section>
@@ -9,20 +25,24 @@
 
 	<div id="rulesets">
 		<div class="ruleset">
-			<input type="checkbox" id="301" name="301" checked />
+			<input type="checkbox" id="301" name="301" onclick={() => {checked501 = false}} bind:checked={checked301}/>
 			<label for="301">301</label>
 		</div>
 		<div class="ruleset">
-			<input type="checkbox" id="501" name="501" disabled />
+			<input type="checkbox" id="501" name="501" onclick={() => {checked301 = false}} bind:checked={checked501}/>
 			<label for="501">501</label>
 		</div>
 		<div class="ruleset">
-			<input type="checkbox" id="killer" name="killer" disabled />
-			<label for="killer">Killer</label>
+			<label id="variantLabel" for="Variant">Variant</label>
+			<select name="variant" id="variant" bind:value={selectedVariant}>
+				<option value="standard">Standard</option>
+				<option value="double-in">Double In</option>
+				<option value="double-out">Double Out</option>
+			</select>
 		</div>
 	</div>
 
-	<a href="/setup">
+	<a onclick={() => setRules()} href="/setup">
 		<Button text="Next" />
 	</a>
 </section>
@@ -63,9 +83,22 @@
 		grid-area: 2 / 2 / 2 / 4;
 	}
 
+	#variantLabel{
+		margin-left: 10%;
+		grid-area: 2 / 1 / 2 / 1;
+	}
+
 	input {
 		grid-area: 2 / 1 / 2 / 1;
 		cursor: pointer;
+	}
+
+	select{
+		width:300%;
+		background-color:#fff;
+		border: 2px solid black;
+		border-radius: 4px;
+		grid-area: 2 / 3 / 2 / 4;
 	}
 
 	#rulesets {
