@@ -111,6 +111,7 @@ class DartDetector:
             return [], thresh, contour_boxes, motion_level
 
         if self.ready_to_analyze and (now - self.last_movement > self.still_time):
+            groups.clear()
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
             filtered = [c for c in contours if cv2.contourArea(c) >= self.min_blob_area]
