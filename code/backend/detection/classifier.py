@@ -54,14 +54,29 @@ def classify_field(ring_ids, sector_id):
     outer, inner = (ring_ids[0], ring_ids[1]) if len(ring_ids) == 2 else (ring_ids[0], None)
     number = DARTBOARD_NUMBERS[sector_id]
 
+    # return detailed field description
+    # if outer == 0 and inner == 1:
+    #     return f"double {number}"
+    # elif outer == 1 and inner == 2:
+    #     return f"single {number} (outer)"
+    # elif outer == 2 and inner == 3:
+    #     return f"triple {number}"
+    # elif outer == 3 and inner == 4:
+    #     return f"single {number} (inner)"
+    # elif outer == 4 and inner == 5:
+    #     return f"outer bull"
+    # return f"single {number}"
+
     if outer == 0 and inner == 1:
-        return f"double {number}"
+        return f"{number * 2}"
     elif outer == 1 and inner == 2:
-        return f"single {number} (outer)"
+        return f"{number}"
     elif outer == 2 and inner == 3:
-        return f"triple {number}"
+        return f"{number * 3}"
     elif outer == 3 and inner == 4:
-        return f"single {number} (inner)"
+        return f"{number}"
     elif outer == 4 and inner == 5:
-        return f"outer bull"
-    return f"single {number}"
+        return "25"
+    elif outer == 5:
+        return "50"
+    return f"{number}"
