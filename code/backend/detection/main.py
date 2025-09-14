@@ -1,3 +1,6 @@
+from flask import Flask
+from flask_socketio import SocketIO, emit
+import threading
 import cv2
 from file_handler import *
 from classifier import *
@@ -10,6 +13,35 @@ NUM_RINGS = len(ring_data)
 
 clicked_points = []
 canvas_size = None
+
+def select_camera(max_cams=5):
+    caps = []
+    for i in range(max_cams):
+        cap = cv2.VideoCapture(i)
+        if cap.isOpened():
+            caps.append((i, cap))
+        else:
+            cap.release()
+    if not caps:
+        print("No cameras found.")
+        return None
+
+    print("Press the number key for the camera you want to use.")
+    while True:
+        for idx, (i, cap) in enumerate(caps):
+            ret, frame = cap.read()
+            if ret:
+                cv2.imshow(f"Camera {i}", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if ord('0') <= key < ord('0') + len(caps):
+            selected = key - ord('0')
+            cam_idx = caps[selected][0]
+            break
+
+    for i, cap in caps:
+        cap.release()
+        cv2.destroyWindow(f"Camera {i}")
+    return cam_idx
 
 def mouse_callback(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -41,9 +73,24 @@ def draw_virtual_canvas():
 
     return canvas
 
+app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@app.route("/")
+def index():
+    return "Dart detection backend running"
+
+def start_socketio():
+    socketio.run(app, host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+
 def main():
     global canvas_size
-    cap = cv2.VideoCapture(0)
+    cam_index = select_camera()
+    if cam_index is None:
+        return
+
+    cap = cv2.VideoCapture(cam_index)
     ret, frame = cap.read()
     if not ret:
         print("Failed to read from camera.")
@@ -87,8 +134,13 @@ def main():
         for (x, y) in new_darts:
             ring_ids = classify_ring(int(x), int(y))
             sector_id = classify_sector(int(x), int(y))
-            field = classify_field(ring_ids, sector_id)
-            print(f"[Auto] Dart hit at ({x:.1f}, {y:.1f}) → {field}")
+            score = classify_field(ring_ids, sector_id)
+            data = {
+                "score": int(score),
+                "coords": {"x": int(x), "y": int(y)}
+            }
+            socketio.emit("dart_hit", data)
+            print(f"[Auto] Sent: {data}")
 
         for (x, y) in detector.known_darts:
             cv2.circle(frame, (int(x), int(y)), 6, (255, 0, 0), -1)
@@ -100,7 +152,18 @@ def main():
         for group in detector.get_groups():
             cv2.drawContours(debug_merged, group, -1, (0, 255, 255), 2)
 
-        debug_tip = cv2.imread("last_detected_dart.png", cv2.IMREAD_COLOR)
+        if os.path.exists("last_detected_dart.png"):
+            debug_tip = cv2.imread("last_detected_dart.png", cv2.IMREAD_COLOR)
+            if debug_tip is None:
+                debug_tip = np.zeros_like(debug_merged)
+            else:
+                debug_tip = cv2.resize(
+                    debug_tip,
+                    (debug_merged.shape[1], debug_merged.shape[0])
+                )
+        else:
+            debug_tip = np.zeros_like(debug_merged)
+
         debug_tip = cv2.resize(debug_tip, (debug_merged.shape[1],
                                            debug_merged.shape[0])) if debug_tip is not None else np.zeros_like(
             debug_merged)
@@ -124,4 +187,5 @@ def main():
     os.remove("last_detected_dart.png")
 
 if __name__ == "__main__":
+    threading.Thread(target=start_socketio, daemon=True).start()
     main()
