@@ -136,7 +136,7 @@
 
 
 	<a href="/game">
-		<Button text="Play" />
+		<Button text="Next" />
 	</a>
 </section>
 
@@ -158,7 +158,7 @@
 		font-weight: 300;
 		font-size: 64px;
 		color: #f6edf1;
-		margin-bottom: 7vh;
+		margin-bottom: 3vh;
 	}
 	#inputs {
 		display: flex;

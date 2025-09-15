@@ -5,6 +5,7 @@
   import Button from "../../comps/Button.svelte";
   import { onMount } from "svelte";
   import { rulesState } from "../../stores/rulesStore.svelte";
+  import {io} from 'socket.io-client';
 
   interface Player {
     id: number;
@@ -19,6 +20,7 @@
   let playerPoints: number[] = $state([0, 0]);
   let playerInputs: string[] = ["", ""];
   let hasWon = writable(0);
+  const socket = io("http://localhost:5000/");
 
   onMount(async () => {
     players = playerState.getPlainPlayers();
@@ -32,13 +34,17 @@
         version: rulesState.ruleset,
       }),
     });
-
+1
     let game = await res.json();
     gameId = game.gameId;
     playerPoints = [game.player1Score, game.player2Score];
     console.log(game);
     console.log(gameId);
   });
+
+  socket.on('dart_hit', (e) =>{
+    subtractPoints(currentPlayer, e.score)
+  })
 
   async function subtractPoints(playerIndex: number, score: number) {
     if (isNaN(score) || score > 60 || score < 0) {
