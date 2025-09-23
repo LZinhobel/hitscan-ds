@@ -47,9 +47,9 @@ def classify_sector(x, y):
 
 def classify_field(ring_ids, sector_id):
     if 0 in ring_ids and len(ring_ids) == 1:
-        return "0 (outside)"
+        return "0"
     if len(ring_ids) == 1 and ring_ids[0] == 5:
-        return "bullseye"
+        return "50"
 
     outer, inner = (ring_ids[0], ring_ids[1]) if len(ring_ids) == 2 else (ring_ids[0], None)
     number = DARTBOARD_NUMBERS[sector_id]
@@ -68,15 +68,13 @@ def classify_field(ring_ids, sector_id):
     # return f"single {number}"
 
     if outer == 0 and inner == 1:
-        return f"{number * 2}"
+        return f"D{number}"
     elif outer == 1 and inner == 2:
-        return f"{number}"
+        return f"S{number}"
     elif outer == 2 and inner == 3:
-        return f"{number * 3}"
+        return f"T{number}"
     elif outer == 3 and inner == 4:
-        return f"{number}"
+        return f"S{number}"
     elif outer == 4 and inner == 5:
         return "25"
-    elif outer == 5:
-        return "50"
     return f"{number}"
