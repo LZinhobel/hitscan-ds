@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { rulesState } from "../stores/rulesStore.svelte";
 
   type Camera = { deviceId: string; label: string; stream?: MediaStream };
 
@@ -101,10 +102,10 @@
   }
 
   // --- Draw everything ---
-  const MOVE_STEP = 1;
-  const SCALE_STEP = 1;
-  const STRETCH_STEP = 0.01;
-  const ROTATE_STEP = 1;
+  let MOVE_STEP = 1;
+  let SCALE_STEP = 1;
+  let STRETCH_STEP = 0.01;
+  let ROTATE_STEP = 1;
 
   function draw() {
     if (!canvasElement || !ctx || !videoElement) return;
@@ -116,8 +117,8 @@
     // Draw rings
     rings.forEach((r, i) => {
       if (i <= currentRing) {
-        ctx.beginPath();
-        ctx.ellipse(
+        ctx!.beginPath();
+        ctx!.ellipse(
           r.x,
           r.y,
           r.radius * r.scaleX,
@@ -126,10 +127,10 @@
           0,
           2 * Math.PI
         );
-        ctx.strokeStyle =
+        ctx!.strokeStyle =
           i === currentRing && mode === "rings" ? "lime" : "white";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx!.lineWidth = 2;
+        ctx!.stroke();
       }
     });
 
@@ -159,8 +160,18 @@
     if (!rings[currentRing]) return;
     const r = rings[currentRing];
 
+    let key = e.key;
+    let fast = false;
+
+    if (key === key.toUpperCase()) {
+      key = key.toLowerCase();
+      fast = true;
+    }
+
+    MOVE_STEP = fast ? 3 : 1;
+
     if (mode === "rings") {
-      switch (e.key) {
+      switch (key) {
         case "w":
           r.y -= MOVE_STEP;
           break;
@@ -173,10 +184,12 @@
         case "d":
           r.x += MOVE_STEP;
           break;
+        case "e":
         case "+":
         case "=":
           r.radius += SCALE_STEP;
           break;
+        case "q":
         case "-":
           r.radius = Math.max(10, r.radius - SCALE_STEP);
           break;
@@ -192,7 +205,7 @@
         case "l":
           r.scaleX += STRETCH_STEP;
           break;
-        case "n":
+        case "r":
           currentRing++;
           if (currentRing >= NUM_RINGS) {
             console.log("Calibration done:", rings, "Line config:", {
@@ -209,7 +222,7 @@
           break;
       }
     } else if (mode === "lines") {
-      switch (e.key) {
+      switch (key) {
         case "a":
           lineOffsetX -= MOVE_STEP;
           break;
@@ -234,10 +247,10 @@
         case "l":
           lineStretchX += STRETCH_STEP;
           break;
-        case "r":
+        case "q":
           lineRotation -= ROTATE_STEP;
           break;
-        case "t":
+        case "e":
           lineRotation += ROTATE_STEP;
           break;
         case "+":
@@ -247,7 +260,7 @@
         case "-":
           lineScale = Math.max(0.1, lineScale - STRETCH_STEP);
           break;
-        case "n":
+        case "r":
           console.log("Calibration finished:", rings, {
             lineRotation,
             lineOffsetX,
@@ -256,6 +269,8 @@
             lineStretchX,
             lineStretchY,
           });
+
+          exportCalibration();
           break;
       }
     }
@@ -263,11 +278,11 @@
     draw();
   }
 
-  // --- Lifecycle ---
   onMount(async () => {
     if (typeof window === "undefined") return;
     await requestPermission();
     await loadCameras();
+    rulesState.isCalibrated = false;
     window.addEventListener("keydown", handleKey);
   });
 
@@ -277,11 +292,35 @@
     cameras.forEach((c) => c.stream?.getTracks().forEach((t) => t.stop()));
   });
 
-  // --- Reactive ctx initialization ---
   $: if (canvasElement && !ctx) {
     ctx = canvasElement.getContext("2d");
     draw();
   }
+
+function exportCalibration() {
+  const data = {
+    rings: rings.map(r => ({
+      x: r.x,
+      y: r.y,
+      radius: r.radius,
+      scaleX: r.scaleX,
+      scaleY: r.scaleY
+    })),
+    lines: {
+      rotation: lineRotation,
+      offsetX: lineOffsetX,
+      offsetY: lineOffsetY,
+      scale: lineScale,
+      stretchX: lineStretchX,
+      stretchY: lineStretchY
+    }
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  rulesState.isCalibrated = true;
+  console.log("Calibration JSON:", json);
+}
+
 </script>
 
 <div id="compBody">
@@ -305,10 +344,40 @@
         ></canvas>
       {/if}
     </div>
+
+    <div id="controls">
+      <p>W/A/S/D - Move Element</p>
+      <p>Shift + W/A/S/D - Move Element Faster</p>
+      <p>I/J/K/L - Stretch Element</p>
+      <p>Q/E - Scale Ring/Rotate Lines</p>
+      <p>+/-  - Scale Lines</p>
+      <p>R - Next Element</p>
+    </div>
   </div>
 </div>
 
 <style>
+  #compBody {
+    height: 45vh;
+    margin-bottom: 10vh;
+  }
+
+  #controls{
+    display:flex;
+    flex-direction:column;
+    gap: 1rem;
+    width:18vw;
+    height:48vh;
+    margin-left: 3vw;
+    background-color: rgba(220, 161, 186, 0.6);
+    padding: 1vh 1vw;
+  }
+
+  p{
+    color:#d6d6d6;
+  }
+
+
   .camera-buttons {
     display: flex;
     flex-direction: column;
@@ -321,7 +390,7 @@
     border: 2px solid #000;
     background: #862b52;
     color: #fff;
-    height: 100%;
+    height: 6vh;
     margin-right: 10%;
     margin-bottom: 3vh;
   }
@@ -334,7 +403,9 @@
     background: #af376b;
   }
   .camera-buttons button.selected {
-    height: 15%;
+    height: 10%;
+    max-height: 10vh;
+    max-width: 10vw;
     margin-bottom: 5%;
     color: black;
     background: #db4888;
@@ -344,24 +415,7 @@
     max-width: 800px;
     height: auto;
     display: block;
-  }
-  h2,
-  h3 {
-    color: white;
-    text-align: center;
-    font-family: "Roboto", sans-serif;
+    object-fit: contain;
   }
 
-  h2 {
-    font-size: 30px;
-  }
-
-  h3 {
-    font-size: 20px;
-  }
-
-  #compBody{
-    height:45vh;
-    margin-bottom:5vh;
-  }
 </style>

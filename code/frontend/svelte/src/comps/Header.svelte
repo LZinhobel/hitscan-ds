@@ -7,7 +7,8 @@
 
 <style>
 	header {
-		position: absolute;
+		padding-top:2vh;
+		height:8vh;
 		width: 100vw;
 		border-bottom: 4px solid #dca1ba;
 		background-color: #180a10;
@@ -18,6 +19,6 @@
 		color: #f6edf1;
 		font-size: 50px;
 		letter-spacing: 30%;
-		margin-left: 2vw;
+		margin: 0 0 0 2vw;
 	}
 </style>

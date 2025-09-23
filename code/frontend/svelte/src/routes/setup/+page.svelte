@@ -70,7 +70,7 @@
       <input
         type="text"
         value={searchTerm1}
-        oninput={(e) => (searchTerm1 = e.target.value)}
+        oninput={(e) => (searchTerm1 = e.target!.value)}
         onfocus={() => (dropdown1visible = true)}
         onblur={() => (dropdown1visible = false)}
         placeholder="Player 1..."
@@ -104,7 +104,7 @@
       <input
         type="text"
         value={searchTerm2}
-        oninput={(e) => (searchTerm2 = e.target.value)}
+        oninput={(e) => (searchTerm2 = e.target!.value)}
         onfocus={() => (dropdown2visible = true)}
         onblur={() => (dropdown2visible = false)}
         placeholder="Player 2..."
@@ -135,7 +135,7 @@
     </div>
   </div>
 
-  <a href="/game">
+  <a href="/setup/camera">
     <Button text="Next" />
   </a>
 </section>
@@ -146,11 +146,10 @@
   section {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     background-color: #180a10;
-    margin: 0;
-    height: 100vh;
+    padding-top: 20vh;
+    height: 80vh;
     overflow: hidden;
   }
   h2 {

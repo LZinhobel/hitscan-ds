@@ -1,4 +1,5 @@
 export const rulesState = $state({
     ruleset: '',
-    variant: ''
+    variant: '',
+    isCalibrated: false
 })
