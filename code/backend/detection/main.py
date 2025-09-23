@@ -2,6 +2,7 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 import threading
 import cv2
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from file_handler import *
 from classifier import *
 from detector import DartDetector
@@ -76,9 +77,73 @@ def draw_virtual_canvas():
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+async def _send_safe(ws: WebSocket, obj: dict):
+    try:
+        await ws.send_text(json.dumps(obj))
+    except Exception:
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
 @app.route("/")
 def index():
     return "Dart detection backend running"
+
+@app.route("/calibrate")
+async def calibrate(ws: WebSocket):
+    raw = await ws.receive_text()
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        await _send_safe(ws, {"type": "error", "msg": "Invalid JSON"})
+        return
+
+    rings = data.get("rings", [])
+    lines = data.get("lines", {})
+    if not isinstance(lines, dict):
+        lines = {}
+
+    # Convert rings to list-of-lists
+    rings_for_save = []
+    for r in rings:
+        try:
+            cx = float(r["x"])
+            cy = float(r["y"])
+            radius = float(r["radius"])
+            stretch_x = float(r.get("scaleX", 1.0))
+            stretch_y = float(r.get("scaleY", 1.0))
+            rings_for_save.append([cx, cy, radius, stretch_x, stretch_y])
+        except Exception as e:
+            print("[WS] Bad ring entry:", r, "error:", e)
+
+    try:
+        save_rings(rings_for_save)
+        save_lines(
+            float(lines.get("rotation", 0.0)),
+            float(lines.get("offsetX", 0.0)),
+            float(lines.get("offsetY", 0.0)),
+            float(lines.get("scale", 1.0)),
+            float(lines.get("stretchX", 1.0)),
+            float(lines.get("stretchY", 1.0)),
+        )
+
+        _current_rings = rings_for_save
+        _current_lines = (
+            float(lines.get("rotation", 0.0)),
+            float(lines.get("offsetX", 0.0)),
+            float(lines.get("offsetY", 0.0)),
+            float(lines.get("scale", 1.0)),
+            float(lines.get("stretchX", 1.0)),
+            float(lines.get("stretchY", 1.0)),
+        )
+
+        await _send_safe(ws, {"type": "saved", "msg": "Calibration saved"})
+        print("[WS] Calibration saved")
+    except Exception as e:
+        print("[WS] save error:", e)
+        await _send_safe(ws, {"type": "error", "msg": f"Failed to save calibration: {e}"})
 
 def start_socketio():
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, use_reloader=False)
@@ -136,7 +201,7 @@ def main():
             sector_id = classify_sector(int(x), int(y))
             score = classify_field(ring_ids, sector_id)
             data = {
-                "score": int(score),
+                "score": score,
                 "coords": {"x": int(x), "y": int(y)}
             }
             socketio.emit("dart_hit", data)
