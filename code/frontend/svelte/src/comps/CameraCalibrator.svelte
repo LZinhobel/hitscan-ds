@@ -284,31 +284,34 @@
   }
 </script>
 
-<div id="row">
-  <div class="camera-buttons">
-    {#each cameras as cam, i (cam.deviceId)}
-      <button
-        type="button"
-        class:selected={i === selectedIndex}
-        on:click={() => selectCamera(i)}>{cam.label}</button
-      >
-    {/each}
-  </div>
+<div id="compBody">
+  <div id="row">
+    <div class="camera-buttons">
+      {#each cameras as cam, i (cam.deviceId)}
+        <button
+          type="button"
+          class:selected={i === selectedIndex}
+          on:click={() => selectCamera(i)}>{cam.label}</button
+        >
+      {/each}
+    </div>
 
-  <div class="camera-container" style="position:relative;">
-    {#if selectedIndex !== null}
-      <video autoplay playsinline muted bind:this={videoElement}></video>
-      <canvas
-        bind:this={canvasElement}
-        style="position:absolute;top:0;left:0;width:100%;height:100%;"
-      ></canvas>
-    {/if}
+    <div class="camera-container" style="position:relative;">
+      {#if selectedIndex !== null}
+        <video autoplay playsinline muted bind:this={videoElement}></video>
+        <canvas
+          bind:this={canvasElement}
+          style="position:absolute;top:0;left:0;width:100%;height:100%;"
+        ></canvas>
+      {/if}
+    </div>
   </div>
 </div>
 
 <style>
   .camera-buttons {
     display: flex;
+    flex-direction: column;
     gap: 1rem;
     flex-wrap: wrap;
   }
@@ -316,22 +319,24 @@
     cursor: pointer;
     border-radius: 6px;
     border: 2px solid #000;
-    background:  #862b52;
+    background: #862b52;
     color: #fff;
-    max-height: 15%;
+    height: 100%;
     margin-right: 10%;
+    margin-bottom: 3vh;
   }
-  #row{
-    display:flex;
-    flex-direction:row;
+  #row {
+    display: flex;
+    flex-direction: row;
     margin: none;
-    margin-bottom:2vh;
   }
   .camera-buttons button:hover {
-    background:  #af376b;
+    background: #af376b;
   }
   .camera-buttons button.selected {
-    color:black;
+    height: 15%;
+    margin-bottom: 5%;
+    color: black;
     background: #db4888;
   }
   .camera-container video,
@@ -339,5 +344,24 @@
     max-width: 800px;
     height: auto;
     display: block;
+  }
+  h2,
+  h3 {
+    color: white;
+    text-align: center;
+    font-family: "Roboto", sans-serif;
+  }
+
+  h2 {
+    font-size: 30px;
+  }
+
+  h3 {
+    font-size: 20px;
+  }
+
+  #compBody{
+    height:45vh;
+    margin-bottom:5vh;
   }
 </style>

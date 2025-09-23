@@ -42,6 +42,6 @@
 		font-weight: 300;
 		font-size: 64px;
 		color: #f6edf1;
-		margin-bottom: 7vh;
+		margin-bottom: 3vh;
 	}
 </style>
