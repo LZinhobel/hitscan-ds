@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import threading
 import cv2
@@ -75,7 +76,8 @@ def draw_virtual_canvas():
     return canvas
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app,resources={r"/*":{"origins":"*"}})
+socketio = SocketIO(app,cors_allowed_origins="*")
 
 async def _send_safe(ws: WebSocket, obj: dict):
     try:
@@ -146,7 +148,7 @@ async def calibrate(ws: WebSocket):
         await _send_safe(ws, {"type": "error", "msg": f"Failed to save calibration: {e}"})
 
 def start_socketio():
-    socketio.run(app, host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
 
 
 def main():

@@ -200,3 +200,5 @@ sectors.json
 .svelte-kit/
 package
 node_modules/
+.idea/*
+db.*
