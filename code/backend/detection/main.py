@@ -3,7 +3,8 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import threading
 import cv2
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Request, WebSocket
+from fastapi.responses import JSONResponse
 from file_handler import *
 from classifier import *
 from detector import DartDetector
@@ -92,22 +93,18 @@ async def _send_safe(ws: WebSocket, obj: dict):
 def index():
     return "Dart detection backend running"
 
-@app.route("/calibrate")
-async def calibrate(ws: WebSocket):
-    raw = await ws.receive_text()
-
+@app.post("/calibrate")
+async def calibrate(request: Request):
     try:
-        data = json.loads(raw)
+        data = await request.json()
     except Exception:
-        await _send_safe(ws, {"type": "error", "msg": "Invalid JSON"})
-        return
+        return JSONResponse({"type": "error", "msg": "Invalid JSON"}, status_code=400)
 
     rings = data.get("rings", [])
     lines = data.get("lines", {})
     if not isinstance(lines, dict):
         lines = {}
 
-    # Convert rings to list-of-lists
     rings_for_save = []
     for r in rings:
         try:
@@ -141,12 +138,11 @@ async def calibrate(ws: WebSocket):
             float(lines.get("stretchY", 1.0)),
         )
 
-        await _send_safe(ws, {"type": "saved", "msg": "Calibration saved"})
-        print("[WS] Calibration saved")
+        print("[POST] Calibration saved")
+        return JSONResponse({"type": "saved", "msg": "Calibration saved"})
     except Exception as e:
-        print("[WS] save error:", e)
-        await _send_safe(ws, {"type": "error", "msg": f"Failed to save calibration: {e}"})
-
+        print("[POST] save error:", e)
+        return JSONResponse({"type": "error", "msg": f"Failed to save calibration: {e}"}, status_code=500)
 def start_socketio():
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
 
