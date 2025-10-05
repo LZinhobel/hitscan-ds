@@ -10,18 +10,10 @@
   let canvasElement: HTMLCanvasElement | null = null;
   let ctx: CanvasRenderingContext2D | null = null;
 
-  // Dartboard calibration
   const NUM_RINGS = 6;
-  let rings: Array<{
-    x: number;
-    y: number;
-    radius: number;
-    scaleX: number;
-    scaleY: number;
-  }> = [];
+  let rings: Array<{ x: number; y: number; radius: number; scaleX: number; scaleY: number }> = [];
   let currentRing = 0;
 
-  // Sector lines
   const NUM_SECTORS = 20;
   let lineRotation = 0;
   let lineOffsetX = 0;
@@ -31,13 +23,10 @@
   let lineStretchY = 1;
   let mode: "rings" | "lines" = "rings";
 
-  // --- Camera functions (browser-only) ---
   async function requestPermission() {
-    if (typeof navigator === "undefined") return; // ✅ guard
+    if (typeof navigator === "undefined") return;
     try {
-      const tempStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
+      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
       tempStream.getTracks().forEach((t) => t.stop());
     } catch {
       console.warn("Permission denied");
@@ -45,20 +34,13 @@
   }
 
   async function loadCameras() {
-    if (typeof navigator === "undefined") return; // ✅ guard
-    const devices = (await navigator.mediaDevices.enumerateDevices()).filter(
-      (d) => d.kind === "videoinput"
-    );
-    cameras = devices.map((d, i) => ({
-      deviceId: d.deviceId,
-      label: d.label || `Camera ${i + 1}`,
-    }));
+    if (typeof navigator === "undefined") return;
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    cameras = devices.map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
   }
 
   async function selectCamera(index: number) {
-    if (typeof navigator === "undefined") return; // ✅ guard
-
-    // Stop previous camera
+    if (typeof navigator === "undefined") return;
     if (selectedIndex !== null && cameras[selectedIndex]?.stream) {
       cameras[selectedIndex].stream!.getTracks().forEach((t) => t.stop());
     }
@@ -66,9 +48,7 @@
     selectedIndex = index;
     const cam = cameras[selectedIndex];
     try {
-      cam.stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: cam.deviceId } },
-      });
+      cam.stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: cam.deviceId } } });
       if (videoElement && cam.stream) {
         videoElement.srcObject = cam.stream;
         videoElement.onloadedmetadata = () => {
@@ -83,25 +63,32 @@
     }
   }
 
-  // --- Initialize rings in center ---
+  // --- Initialize rings (inherit from previous) ---
   function initRings() {
     if (!videoElement) return;
     const w = videoElement.videoWidth;
     const h = videoElement.videoHeight;
-    rings = Array(NUM_RINGS)
-      .fill(0)
-      .map((_, i) => ({
-        x: w / 2,
-        y: h / 2,
-        radius: 100 * (1 - i * 0.15),
-        scaleX: 1,
-        scaleY: 1,
-      }));
+
+    rings = [];
+    for (let i = 0; i < NUM_RINGS; i++) {
+      if (i === 0) {
+        rings.push({ x: w / 2, y: h / 2, radius: 100, scaleX: 1, scaleY: 1 });
+      } else {
+        const prev = rings[i - 1];
+        rings.push({
+          x: prev.x,
+          y: prev.y,
+          radius: prev.radius * 0.85,
+          scaleX: prev.scaleX,
+          scaleY: prev.scaleY,
+        });
+      }
+    }
+
     currentRing = 0;
     draw();
   }
 
-  // --- Draw everything ---
   let MOVE_STEP = 1;
   let SCALE_STEP = 1;
   let STRETCH_STEP = 0.01;
@@ -114,38 +101,23 @@
     canvasElement.height = videoElement.videoHeight;
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-    // Draw rings
     rings.forEach((r, i) => {
       if (i <= currentRing) {
-        ctx!.beginPath();
-        ctx!.ellipse(
-          r.x,
-          r.y,
-          r.radius * r.scaleX,
-          r.radius * r.scaleY,
-          0,
-          0,
-          2 * Math.PI
-        );
-        ctx!.strokeStyle =
-          i === currentRing && mode === "rings" ? "lime" : "white";
-        ctx!.lineWidth = 2;
-        ctx!.stroke();
+        ctx.beginPath();
+        ctx.ellipse(r.x, r.y, r.radius * r.scaleX, r.radius * r.scaleY, 0, 0, 2 * Math.PI);
+        ctx.strokeStyle = i === currentRing && mode === "rings" ? "lime" : "white";
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
     });
 
-    // Draw sector lines only in line mode
     if (mode === "lines") {
       const outer = rings[0];
-      const radius =
-        outer.radius * Math.max(outer.scaleX, outer.scaleY) * lineScale;
+      const radius = outer.radius * Math.max(outer.scaleX, outer.scaleY) * lineScale;
       for (let i = 0; i < NUM_SECTORS; i++) {
-        const angle =
-          (((i * 360) / NUM_SECTORS + lineRotation) * Math.PI) / 180;
-        const x =
-          outer.x + radius * Math.cos(angle) * lineStretchX + lineOffsetX;
-        const y =
-          outer.y + radius * Math.sin(angle) * lineStretchY + lineOffsetY;
+        const angle = (((i * 360) / NUM_SECTORS + lineRotation) * Math.PI) / 180;
+        const x = outer.x + radius * Math.cos(angle) * lineStretchX + lineOffsetX;
+        const y = outer.y + radius * Math.sin(angle) * lineStretchY + lineOffsetY;
         ctx.beginPath();
         ctx.moveTo(outer.x + lineOffsetX, outer.y + lineOffsetY);
         ctx.lineTo(x, y);
@@ -156,10 +128,10 @@
     }
   }
 
+  // --- Keyboard input ---
   function handleKey(e: KeyboardEvent) {
-    if (!rings[currentRing]) return;
+    if (mode === "rings" && !rings[currentRing]) return;
     const r = rings[currentRing];
-
     let key = e.key;
     let fast = false;
 
@@ -172,104 +144,53 @@
 
     if (mode === "rings") {
       switch (key) {
-        case "w":
-          r.y -= MOVE_STEP;
-          break;
-        case "s":
-          r.y += MOVE_STEP;
-          break;
-        case "a":
-          r.x -= MOVE_STEP;
-          break;
-        case "d":
-          r.x += MOVE_STEP;
-          break;
+        case "w": r.y -= MOVE_STEP; break;
+        case "s": r.y += MOVE_STEP; break;
+        case "a": r.x -= MOVE_STEP; break;
+        case "d": r.x += MOVE_STEP; break;
         case "e":
         case "+":
-        case "=":
-          r.radius += SCALE_STEP;
-          break;
+        case "=": r.radius += SCALE_STEP; break;
         case "q":
-        case "-":
-          r.radius = Math.max(10, r.radius - SCALE_STEP);
-          break;
-        case "i":
-          r.scaleY += STRETCH_STEP;
-          break;
-        case "k":
-          r.scaleY = Math.max(0.1, r.scaleY - STRETCH_STEP);
-          break;
-        case "j":
-          r.scaleX = Math.max(0.1, r.scaleX - STRETCH_STEP);
-          break;
-        case "l":
-          r.scaleX += STRETCH_STEP;
-          break;
+        case "-": r.radius = Math.max(10, r.radius - SCALE_STEP); break;
+        case "i": r.scaleY += STRETCH_STEP; break;
+        case "k": r.scaleY = Math.max(0.1, r.scaleY - STRETCH_STEP); break;
+        case "j": r.scaleX = Math.max(0.1, r.scaleX - STRETCH_STEP); break;
+        case "l": r.scaleX += STRETCH_STEP; break;
         case "r":
-          currentRing++;
-          if (currentRing >= NUM_RINGS) {
-            console.log("Calibration done:", rings, "Line config:", {
-              lineRotation,
-              lineOffsetX,
-              lineOffsetY,
-              lineScale,
-              lineStretchX,
-              lineStretchY,
-            });
-            currentRing = NUM_RINGS - 1;
+          if (currentRing + 1 < NUM_RINGS) {
+            const next = rings[currentRing + 1];
+            next.x = r.x;
+            next.y = r.y;
+            next.scaleX = r.scaleX;
+            next.scaleY = r.scaleY;
+            currentRing++;
+          } else {
+            // When switching to line mode, inherit ring stretch
+            const lastRing = rings[rings.length - 1];
+            lineStretchX = lastRing.scaleX;
+            lineStretchY = lastRing.scaleY;
             mode = "lines";
+            console.log("Rings done, switching to lines (stretch inherited)");
           }
           break;
       }
     } else if (mode === "lines") {
       switch (key) {
-        case "a":
-          lineOffsetX -= MOVE_STEP;
-          break;
-        case "d":
-          lineOffsetX += MOVE_STEP;
-          break;
-        case "w":
-          lineOffsetY -= MOVE_STEP;
-          break;
-        case "s":
-          lineOffsetY += MOVE_STEP;
-          break;
-        case "i":
-          lineStretchY += STRETCH_STEP;
-          break;
-        case "k":
-          lineStretchY = Math.max(0.1, lineStretchY - STRETCH_STEP);
-          break;
-        case "j":
-          lineStretchX = Math.max(0.1, lineStretchX - STRETCH_STEP);
-          break;
-        case "l":
-          lineStretchX += STRETCH_STEP;
-          break;
-        case "q":
-          lineRotation -= ROTATE_STEP;
-          break;
-        case "e":
-          lineRotation += ROTATE_STEP;
-          break;
+        case "a": lineOffsetX -= MOVE_STEP; break;
+        case "d": lineOffsetX += MOVE_STEP; break;
+        case "w": lineOffsetY -= MOVE_STEP; break;
+        case "s": lineOffsetY += MOVE_STEP; break;
+        case "i": lineStretchY += STRETCH_STEP; break;
+        case "k": lineStretchY = Math.max(0.1, lineStretchY - STRETCH_STEP); break;
+        case "j": lineStretchX = Math.max(0.1, lineStretchX - STRETCH_STEP); break;
+        case "l": lineStretchX += STRETCH_STEP; break;
+        case "q": lineRotation -= ROTATE_STEP; break;
+        case "e": lineRotation += ROTATE_STEP; break;
         case "+":
-        case "=":
-          lineScale += STRETCH_STEP;
-          break;
-        case "-":
-          lineScale = Math.max(0.1, lineScale - STRETCH_STEP);
-          break;
+        case "=": lineScale += STRETCH_STEP; break;
+        case "-": lineScale = Math.max(0.1, lineScale - STRETCH_STEP); break;
         case "r":
-          console.log("Calibration finished:", rings, {
-            lineRotation,
-            lineOffsetX,
-            lineOffsetY,
-            lineScale,
-            lineStretchX,
-            lineStretchY,
-          });
-
           exportCalibration();
           break;
       }
@@ -297,31 +218,30 @@
     draw();
   }
 
-function exportCalibration() {
-  const data = {
-    rings: rings.map(r => ({
-      x: r.x,
-      y: r.y,
-      radius: r.radius,
-      scaleX: r.scaleX,
-      scaleY: r.scaleY
-    })),
-    lines: {
-      rotation: lineRotation,
-      offsetX: lineOffsetX,
-      offsetY: lineOffsetY,
-      scale: lineScale,
-      stretchX: lineStretchX,
-      stretchY: lineStretchY
-    }
-  };
-
-  const json = JSON.stringify(data, null, 2);
-  rulesState.isCalibrated = true;
-  console.log("Calibration JSON:", json);
-}
-
+  function exportCalibration() {
+    const data = {
+      rings: rings.map(r => ({
+        x: r.x,
+        y: r.y,
+        radius: r.radius,
+        scaleX: r.scaleX,
+        scaleY: r.scaleY
+      })),
+      lines: {
+        rotation: lineRotation,
+        offsetX: lineOffsetX,
+        offsetY: lineOffsetY,
+        scale: lineScale,
+        stretchX: lineStretchX,
+        stretchY: lineStretchY
+      }
+    };
+    const json = JSON.stringify(data, null, 2);
+    rulesState.isCalibrated = true;
+    console.log("Calibration JSON:", json);
+  }
 </script>
+
 
 <div id="compBody">
   <div id="row">
