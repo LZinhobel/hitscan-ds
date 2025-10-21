@@ -1,10 +1,14 @@
-from flask import Flask
+import os
+from time import sleep
+
+import numpy as np
+from flask import Flask,request,jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import threading
+import json
 import cv2
-from fastapi import Request, WebSocket
-from fastapi.responses import JSONResponse
+from fastapi import WebSocket
 from file_handler import *
 from classifier import *
 from detector import DartDetector
@@ -94,31 +98,30 @@ def index():
     return "Dart detection backend running"
 
 @app.post("/calibrate")
-async def calibrate(request: Request):
+def calibrate():
     try:
-        data = await request.json()
+        data = request.get_json(force=True)
     except Exception:
-        return JSONResponse({"type": "error", "msg": "Invalid JSON"}, status_code=400)
+        return jsonify({"type": "error", "msg": "Invalid JSON"}), 400
 
     rings = data.get("rings", [])
-    lines = data.get("lines", {})
-    if not isinstance(lines, dict):
-        lines = {}
+    lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
 
     rings_for_save = []
     for r in rings:
         try:
             cx = float(r["x"])
             cy = float(r["y"])
-            radius = float(r["radius"])
+            scale = float(r["radius"])
             stretch_x = float(r.get("scaleX", 1.0))
             stretch_y = float(r.get("scaleY", 1.0))
-            rings_for_save.append([cx, cy, radius, stretch_x, stretch_y])
+            rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
         except Exception as e:
             print("[WS] Bad ring entry:", r, "error:", e)
 
     try:
         save_rings(rings_for_save)
+
         save_lines(
             float(lines.get("rotation", 0.0)),
             float(lines.get("offsetX", 0.0)),
@@ -127,25 +130,16 @@ async def calibrate(request: Request):
             float(lines.get("stretchX", 1.0)),
             float(lines.get("stretchY", 1.0)),
         )
-
-        _current_rings = rings_for_save
-        _current_lines = (
-            float(lines.get("rotation", 0.0)),
-            float(lines.get("offsetX", 0.0)),
-            float(lines.get("offsetY", 0.0)),
-            float(lines.get("scale", 1.0)),
-            float(lines.get("stretchX", 1.0)),
-            float(lines.get("stretchY", 1.0)),
-        )
-
         print("[POST] Calibration saved")
-        return JSONResponse({"type": "saved", "msg": "Calibration saved"})
+        sleep(5)
+        main()
+        return jsonify({"type": "saved", "msg": "Calibration saved"})
     except Exception as e:
         print("[POST] save error:", e)
-        return JSONResponse({"type": "error", "msg": f"Failed to save calibration: {e}"}, status_code=500)
+        return jsonify({"type": "error", "msg": f"Failed to save calibration: {e}"}), 500
+
 def start_socketio():
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
-
 
 def main():
     global canvas_size
@@ -250,5 +244,4 @@ def main():
     os.remove("last_detected_dart.png")
 
 if __name__ == "__main__":
-    threading.Thread(target=start_socketio, daemon=True).start()
-    main()
+    start_socketio()

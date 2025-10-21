@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { rulesState } from "../stores/rulesStore.svelte";
+  import calibrationStore, {
+    setCalibration,
+  } from "../stores/calibrationStore.svelte";
 
   type Camera = { deviceId: string; label: string; stream?: MediaStream };
 
@@ -10,8 +13,16 @@
   let canvasElement: HTMLCanvasElement | null = null;
   let ctx: CanvasRenderingContext2D | null = null;
 
+  // TODO: Load saved Calibration from Backend, Just pick the selected frontend index fuck the inconsistency
+
   const NUM_RINGS = 6;
-  let rings: Array<{ x: number; y: number; radius: number; scaleX: number; scaleY: number }> = [];
+  let rings: Array<{
+    x: number;
+    y: number;
+    radius: number;
+    scaleX: number;
+    scaleY: number;
+  }> = [];
   let currentRing = 0;
 
   const NUM_SECTORS = 20;
@@ -26,7 +37,9 @@
   async function requestPermission() {
     if (typeof navigator === "undefined") return;
     try {
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const tempStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
       tempStream.getTracks().forEach((t) => t.stop());
     } catch {
       console.warn("Permission denied");
@@ -35,8 +48,13 @@
 
   async function loadCameras() {
     if (typeof navigator === "undefined") return;
-    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
-    cameras = devices.map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter(
+      (d) => d.kind === "videoinput",
+    );
+    cameras = devices.map((d, i) => ({
+      deviceId: d.deviceId,
+      label: d.label || `Camera ${i + 1}`,
+    }));
   }
 
   async function selectCamera(index: number) {
@@ -48,7 +66,9 @@
     selectedIndex = index;
     const cam = cameras[selectedIndex];
     try {
-      cam.stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: cam.deviceId } } });
+      cam.stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: cam.deviceId } },
+      });
       if (videoElement && cam.stream) {
         videoElement.srcObject = cam.stream;
         videoElement.onloadedmetadata = () => {
@@ -104,8 +124,17 @@
     rings.forEach((r, i) => {
       if (i <= currentRing) {
         ctx.beginPath();
-        ctx.ellipse(r.x, r.y, r.radius * r.scaleX, r.radius * r.scaleY, 0, 0, 2 * Math.PI);
-        ctx.strokeStyle = i === currentRing && mode === "rings" ? "lime" : "white";
+        ctx.ellipse(
+          r.x,
+          r.y,
+          r.radius * r.scaleX,
+          r.radius * r.scaleY,
+          0,
+          0,
+          2 * Math.PI,
+        );
+        ctx.strokeStyle =
+          i === currentRing && mode === "rings" ? "lime" : "white";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -113,11 +142,15 @@
 
     if (mode === "lines") {
       const outer = rings[0];
-      const radius = outer.radius * Math.max(outer.scaleX, outer.scaleY) * lineScale;
+      const radius =
+        outer.radius * Math.max(outer.scaleX, outer.scaleY) * lineScale;
       for (let i = 0; i < NUM_SECTORS; i++) {
-        const angle = (((i * 360) / NUM_SECTORS + lineRotation) * Math.PI) / 180;
-        const x = outer.x + radius * Math.cos(angle) * lineStretchX + lineOffsetX;
-        const y = outer.y + radius * Math.sin(angle) * lineStretchY + lineOffsetY;
+        const angle =
+          (((i * 360) / NUM_SECTORS + lineRotation) * Math.PI) / 180;
+        const x =
+          outer.x + radius * Math.cos(angle) * lineStretchX + lineOffsetX;
+        const y =
+          outer.y + radius * Math.sin(angle) * lineStretchY + lineOffsetY;
         ctx.beginPath();
         ctx.moveTo(outer.x + lineOffsetX, outer.y + lineOffsetY);
         ctx.lineTo(x, y);
@@ -144,19 +177,39 @@
 
     if (mode === "rings") {
       switch (key) {
-        case "w": r.y -= MOVE_STEP; break;
-        case "s": r.y += MOVE_STEP; break;
-        case "a": r.x -= MOVE_STEP; break;
-        case "d": r.x += MOVE_STEP; break;
+        case "w":
+          r.y -= MOVE_STEP;
+          break;
+        case "s":
+          r.y += MOVE_STEP;
+          break;
+        case "a":
+          r.x -= MOVE_STEP;
+          break;
+        case "d":
+          r.x += MOVE_STEP;
+          break;
         case "e":
         case "+":
-        case "=": r.radius += SCALE_STEP; break;
+        case "=":
+          r.radius += SCALE_STEP;
+          break;
         case "q":
-        case "-": r.radius = Math.max(10, r.radius - SCALE_STEP); break;
-        case "i": r.scaleY += STRETCH_STEP; break;
-        case "k": r.scaleY = Math.max(0.1, r.scaleY - STRETCH_STEP); break;
-        case "j": r.scaleX = Math.max(0.1, r.scaleX - STRETCH_STEP); break;
-        case "l": r.scaleX += STRETCH_STEP; break;
+        case "-":
+          r.radius = Math.max(10, r.radius - SCALE_STEP);
+          break;
+        case "i":
+          r.scaleY += STRETCH_STEP;
+          break;
+        case "k":
+          r.scaleY = Math.max(0.1, r.scaleY - STRETCH_STEP);
+          break;
+        case "j":
+          r.scaleX = Math.max(0.1, r.scaleX - STRETCH_STEP);
+          break;
+        case "l":
+          r.scaleX += STRETCH_STEP;
+          break;
         case "r":
           if (currentRing + 1 < NUM_RINGS) {
             const next = rings[currentRing + 1];
@@ -177,19 +230,43 @@
       }
     } else if (mode === "lines") {
       switch (key) {
-        case "a": lineOffsetX -= MOVE_STEP; break;
-        case "d": lineOffsetX += MOVE_STEP; break;
-        case "w": lineOffsetY -= MOVE_STEP; break;
-        case "s": lineOffsetY += MOVE_STEP; break;
-        case "i": lineStretchY += STRETCH_STEP; break;
-        case "k": lineStretchY = Math.max(0.1, lineStretchY - STRETCH_STEP); break;
-        case "j": lineStretchX = Math.max(0.1, lineStretchX - STRETCH_STEP); break;
-        case "l": lineStretchX += STRETCH_STEP; break;
-        case "q": lineRotation -= ROTATE_STEP; break;
-        case "e": lineRotation += ROTATE_STEP; break;
+        case "a":
+          lineOffsetX -= MOVE_STEP;
+          break;
+        case "d":
+          lineOffsetX += MOVE_STEP;
+          break;
+        case "w":
+          lineOffsetY -= MOVE_STEP;
+          break;
+        case "s":
+          lineOffsetY += MOVE_STEP;
+          break;
+        case "i":
+          lineStretchY += STRETCH_STEP;
+          break;
+        case "k":
+          lineStretchY = Math.max(0.1, lineStretchY - STRETCH_STEP);
+          break;
+        case "j":
+          lineStretchX = Math.max(0.1, lineStretchX - STRETCH_STEP);
+          break;
+        case "l":
+          lineStretchX += STRETCH_STEP;
+          break;
+        case "q":
+          lineRotation -= ROTATE_STEP;
+          break;
+        case "e":
+          lineRotation += ROTATE_STEP;
+          break;
         case "+":
-        case "=": lineScale += STRETCH_STEP; break;
-        case "-": lineScale = Math.max(0.1, lineScale - STRETCH_STEP); break;
+        case "=":
+          lineScale += STRETCH_STEP;
+          break;
+        case "-":
+          lineScale = Math.max(0.1, lineScale - STRETCH_STEP);
+          break;
         case "r":
           exportCalibration();
           break;
@@ -218,14 +295,14 @@
     draw();
   }
 
-  function exportCalibration() {
+  async function exportCalibration() {
     const data = {
-      rings: rings.map(r => ({
+      rings: rings.map((r) => ({
         x: r.x,
         y: r.y,
         radius: r.radius,
         scaleX: r.scaleX,
-        scaleY: r.scaleY
+        scaleY: r.scaleY,
       })),
       lines: {
         rotation: lineRotation,
@@ -233,15 +310,23 @@
         offsetY: lineOffsetY,
         scale: lineScale,
         stretchX: lineStretchX,
-        stretchY: lineStretchY
-      }
+        stretchY: lineStretchY,
+      },
     };
+
+    setCalibration(data);
+
     const json = JSON.stringify(data, null, 2);
     rulesState.isCalibrated = true;
-    console.log("Calibration JSON:", json);
+
+    const response = await fetch("http://127.0.0.1:5000/calibrate", {
+      method: "POST",
+      body: json,
+    });
+
+    console.log(response);
   }
 </script>
-
 
 <div id="compBody">
   <div id="row">
@@ -270,7 +355,7 @@
       <p>Shift + W/A/S/D - Move Element Faster</p>
       <p>I/J/K/L - Stretch Element</p>
       <p>Q/E - Scale Ring/Rotate Lines</p>
-      <p>+/-  - Scale Lines</p>
+      <p>+/- - Scale Lines</p>
       <p>R - Next Element</p>
     </div>
   </div>
@@ -282,21 +367,20 @@
     margin-bottom: 10vh;
   }
 
-  #controls{
-    display:flex;
-    flex-direction:column;
+  #controls {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    width:18vw;
-    height:48vh;
+    width: 18vw;
+    height: 48vh;
     margin-left: 3vw;
     background-color: rgba(220, 161, 186, 0.6);
     padding: 1vh 1vw;
   }
 
-  p{
-    color:#d6d6d6;
+  p {
+    color: #d6d6d6;
   }
-
 
   .camera-buttons {
     display: flex;
@@ -337,5 +421,4 @@
     display: block;
     object-fit: contain;
   }
-
 </style>

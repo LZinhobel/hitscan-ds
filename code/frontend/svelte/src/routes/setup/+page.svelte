@@ -10,7 +10,7 @@
     name: string;
   }
 
-  //TODO Sanitize Inputs, Duplicate Protection, Enter to Select, make sure both selected
+  //TODO Sanitize Inputs, make sure both selected
 
   let searchTerm1 = $state("");
   let searchTerm2 = $state("");
@@ -21,14 +21,14 @@
 
   let filteredPlayers1 = $derived(
     allPlayers.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm1.toLowerCase())
-    )
+      p.name.toLowerCase().includes(searchTerm1.toLowerCase()),
+    ),
   );
 
   let filteredPlayers2 = $derived(
     allPlayers.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm2.toLowerCase())
-    )
+      p.name.toLowerCase().includes(searchTerm2.toLowerCase()),
+    ),
   );
 
   onMount(async () => {
@@ -49,13 +49,17 @@
   }
 
   async function createPlayer(name: string, index: number) {
-    const res = await fetch("http://localhost:8000/player/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    const newPlayer: Player = await res.json();
-    selectPlayer(index, newPlayer);
+    if (allPlayers.find((p) => p.name == name)) {
+      return;
+    } else {
+      const res = await fetch("http://localhost:8000/player/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const newPlayer: Player = await res.json();
+      selectPlayer(index, newPlayer);
+    }
   }
 </script>
 
@@ -82,6 +86,11 @@
               <a
                 href="#"
                 class="dropdown-item"
+                onkeydown={(e) => {
+                  if (e.key == "Enter") {
+                    selectPlayer(1, p);
+                  }
+                }}
                 onmousedown={() => selectPlayer(0, p)}
               >
                 {p.name}
@@ -91,6 +100,11 @@
             <a
               href="#"
               class="dropdown-item"
+              onkeydown={(e) => {
+                if (e.key == "Enter") {
+                  createPlayer(searchTerm1, 0);
+                }
+              }}
               onmousedown={() => createPlayer(searchTerm1, 0)}
             >
               ➕ Create "{searchTerm1}"
@@ -116,6 +130,11 @@
               <a
                 href="#"
                 class="dropdown-item"
+                onkeydown={(e) => {
+                  if (e.key == "Enter") {
+                    selectPlayer(1, p);
+                  }
+                }}
                 onmousedown={() => selectPlayer(1, p)}
               >
                 {p.name}
@@ -125,6 +144,11 @@
             <a
               href="#"
               class="dropdown-item"
+              onkeydown={(e) => {
+                if (e.key == "Enter") {
+                  createPlayer(searchTerm2, 1);
+                }
+              }}
               onmousedown={() => createPlayer(searchTerm2, 1)}
             >
               ➕ Create "{searchTerm2}"

@@ -24,3 +24,4 @@ async def create_player(player: playerCreate):
     return await Player.create(name= player.name)
 
 
+

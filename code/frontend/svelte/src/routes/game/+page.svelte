@@ -5,22 +5,35 @@
   import Button from "../../comps/Button.svelte";
   import { onMount } from "svelte";
   import { rulesState } from "../../stores/rulesStore.svelte";
-  import {io} from 'socket.io-client';
+  import { io } from "socket.io-client";
+  import calibrationStore from "../../stores/calibrationStore.svelte";
 
   interface Player {
     id: number;
     name: string;
   }
 
+  // TODO: Double check mapping Function, Display last 3 hits on player box, research more to put in there ?
+
   let players: (Player | null)[] = [];
   let gameId: Number;
   let currentPlayer = $state(0);
+
   let shotsThisTurn = $state(0);
   let playerScoring: boolean[] = $state([false, false]);
   let playerPoints: number[] = $state([0, 0]);
-  let playerInputs: string[] = ["", ""];
+
   let hasWon = writable(0);
+
   const socket = io("http://localhost:5000/");
+
+  let canvas: HTMLCanvasElement;
+  let ctx: CanvasRenderingContext2D | null = null;
+  let dartboard: HTMLImageElement;
+  const calibration = get(calibrationStore);
+  const outer = calibration.rings[0];
+
+  let hitCords: Array<{ x: number; y: number }> = $state([]);
 
   onMount(async () => {
     players = playerState.getPlainPlayers();
@@ -34,36 +47,130 @@
         version: rulesState.ruleset,
       }),
     });
-1
+    1;
     let game = await res.json();
     gameId = game.gameId;
     playerPoints = [game.player1Score, game.player2Score];
     console.log(game);
-    console.log(gameId);
+
+    ctx = canvas.getContext("2d");
+    canvas.width = dartboard.width;
+    canvas.height = dartboard.height;
+    setTimeout(() => {
+      draw();
+    }, 500);
   });
 
-  socket.on('dart_hit', (e) =>{
-    subtractPoints(currentPlayer, e.score)
-  })
+  socket.on("dart_hit", (e) => {
+    const { hitType, score } = parseSocketScore(e.score);
+    hitCords.push(e.coords);
+    draw();
+    subtractPoints(currentPlayer, score, hitType);
+  });
 
-  async function subtractPoints(playerIndex: number, score: number) {
-    if (isNaN(score) || score > 60 || score < 0) {
-      return;
+  function parseSocketScore(rawScore: string): {
+    hitType: "single" | "double" | "triple" | "miss";
+    score: number;
+  } {
+    let hitType: "single" | "double" | "triple" | "miss" = "miss";
+    let score = 0;
+
+    if (typeof rawScore === "string") {
+      const match = rawScore.match(/^([SDT])(\d+)$/i);
+      if (match) {
+        const [, letter, numStr] = match;
+        const base = parseInt(numStr);
+        switch (letter.toUpperCase()) {
+          case "S":
+            hitType = "single";
+            score = base;
+            break;
+          case "D":
+            hitType = "double";
+            score = 2 * base;
+            break;
+          case "T":
+            hitType = "triple";
+            score = 3 * base;
+            break;
+        }
+      } else {
+        // Handle bull, double bull, and misses
+        const numeric = parseInt(rawScore);
+        if (numeric === 0) {
+          hitType = "miss";
+          score = 0;
+        } else if (numeric === 25) {
+          hitType = "single";
+          score = 25;
+        } else if (numeric === 50) {
+          hitType = "double";
+          score = 50;
+        }
+      }
     }
 
-    let hitType = getHitType(score);
+    return { hitType, score };
+  }
 
-    if (rulesState.variant == "double-in" && !playerScoring[playerIndex]) {
-      if (hitType != "double") {
+  function clearDartboard() {
+    ctx!.clearRect(0, 0, canvas.width, canvas.height);
+    ctx!.drawImage(dartboard, 0, 0, canvas.width, canvas.height);
+  }
+
+  function draw() {
+    if (!ctx || !dartboard) return;
+    clearDartboard();
+
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 2;
+
+    hitCords.forEach(({ x, y }) => {
+      const { x: mappedX, y: mappedY } = mapToBoard(x, y);
+      drawHit(mappedX, mappedY);
+    });
+  }
+
+  function mapToBoard(hitX: number, hitY: number) {
+    const scaleX = canvas.width / (outer.radius * 2 * outer.scaleX);
+    const scaleY = canvas.height / (outer.radius * 2 * outer.scaleY);
+
+    const offsetX = outer.x - outer.radius;
+    const offsetY = outer.y - outer.radius;
+
+    const mappedX = (hitX - offsetX) * scaleX;
+    const mappedY = (hitY - offsetY) * scaleY;
+    return { x: mappedX, y: mappedY };
+  }
+
+  function drawHit(x: number, y: number) {
+    const size = 8;
+    ctx!.beginPath();
+    ctx!.moveTo(x - size, y - size);
+    ctx!.lineTo(x + size, y + size);
+    ctx!.moveTo(x + size, y - size);
+    ctx!.lineTo(x - size, y + size);
+    ctx!.stroke();
+  }
+
+  async function subtractPoints(
+    playerIndex: number,
+    score: number,
+    hitType: "single" | "double" | "triple" | "miss",
+  ) {
+    if (isNaN(score) || score > 60 || score < 0) return;
+
+    if (rulesState.variant === "double-in" && !playerScoring[playerIndex]) {
+      if (hitType !== "double") {
         shotsThisTurn++;
         return;
       }
       playerScoring[playerIndex] = true;
     }
 
-    if (rulesState.variant == "double-out") {
-      let remainingPoints = playerPoints[playerIndex] - score;
-      if (remainingPoints == 0 && hitType != "double") {
+    if (rulesState.variant === "double-out") {
+      const remainingPoints = playerPoints[playerIndex] - score;
+      if (remainingPoints === 0 && hitType !== "double") {
         shotsThisTurn++;
         return;
       }
@@ -76,7 +183,7 @@
         body: JSON.stringify({
           player: players[playerIndex]?.id,
           game: gameId,
-          score: score,
+          score,
         }),
       });
 
@@ -86,12 +193,12 @@
       }
 
       const updatedScore = await res.json();
-
       playerPoints[playerIndex] = updatedScore.score;
 
       shotsThisTurn++;
 
       if (shotsThisTurn >= 3) {
+        clearDartboard();
         currentPlayer = currentPlayer === 0 ? 1 : 0;
         shotsThisTurn = 0;
       }
@@ -99,17 +206,6 @@
       checkWinner();
     } catch (err) {
       console.error("Error posting score:", err);
-    }
-  }
-
-  function getHitType(score: number) {
-    if (score === 25) return "single";
-    if (score === 50) return "double";
-
-    for (let n = 1; n <= 20; n++) {
-      if (score === n) return "single";
-      if (score === 2 * n) return "double";
-      if (score === 3 * n) return "triple";
     }
   }
 
@@ -121,23 +217,23 @@
       winnerId = players[0]!.id;
     } else if (playerPoints[1] == 0) {
       hasWon.set(2);
-      winnerId = players[1]!.id
+      winnerId = players[1]!.id;
     }
 
-  if (winnerId) {
-    try {
-      const res = await fetch("http://localhost:8000/games/setWinner", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gameId: gameId,
-          winnerId: winnerId,
-        }),
-      });
-    } catch (err) {
-      console.error("Error setting winner:", err);
+    if (winnerId) {
+      try {
+        const res = await fetch("http://localhost:8000/games/setWinner", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId: gameId,
+            winnerId: winnerId,
+          }),
+        });
+      } catch (err) {
+        console.error("Error setting winner:", err);
+      }
     }
-  }
   }
 </script>
 
@@ -155,48 +251,19 @@
       <h2>{$playerState.players[0]?.name}</h2>
 
       <div class="titleBox" id="ptsTitleBox"><p>Pts</p></div>
-      <div class="titleBox" id="inputTitleBox"><p>Input</p></div>
       <div class="titleBox" id="ptsBox"><p>{playerPoints[0]}</p></div>
-      <div class="titleBox inputBox" id="inputBox1">
-        <input
-          type="text"
-          placeholder="Points here..."
-          bind:value={playerInputs[0]}
-          disabled={currentPlayer == 1 || $hasWon == 1 || $hasWon == 2}
-          onkeydown={(event) => {
-            if (event.key === "Enter") {
-              subtractPoints(1, parseInt(playerInputs[0]));
-            } else {
-              return;
-            }
-          }}
-        />
-      </div>
     </div>
     <div class="pointsBox">
       <h2>{$playerState.players[1]?.name}</h2>
 
       <div class="titleBox" id="ptsTitleBox"><p>Pts</p></div>
-      <div class="titleBox" id="inputTitleBox"><p>Input</p></div>
       <div class="titleBox" id="ptsBox"><p>{playerPoints[1]}</p></div>
-      <div class="titleBox inputBox" id="inputBox2">
-        <input
-          type="text"
-          placeholder="Points here..."
-          bind:value={playerInputs[1]}
-          disabled={currentPlayer == 0 || $hasWon == 1 || $hasWon == 2}
-          onkeydown={(event) => {
-            if (event.key === "Enter") {
-              subtractPoints(2, parseInt(playerInputs[1]));
-            } else {
-              return;
-            }
-          }}
-        />
-      </div>
     </div>
   </div>
-  <div id="boardView"></div>
+  <div id="boardView">
+    <img bind:this={dartboard} src="/dartboard.png" alt="dartboard" hidden />
+    <canvas bind:this={canvas}></canvas>
+  </div>
 </section>
 
 <style>
@@ -262,21 +329,11 @@
   }
 
   #ptsTitleBox {
-    grid-area: 1/4/1/4;
-  }
-
-  #inputTitleBox {
     grid-area: 1/6/1/6;
   }
 
   #ptsBox {
     height: 100%;
-    grid-area: 3/4/3/4;
-  }
-
-  .inputBox {
-    height: 100%;
-    width: 100%;
     grid-area: 3/6/3/6;
   }
 
@@ -287,11 +344,22 @@
     width: 40%;
   }
   #boardView {
-    width: 45%;
+    position: relative;
+    width: 40%;
     height: 60%;
-    margin-top: 10%;
-    margin-left: 5%;
+    margin-left: 10%;
   }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+  }
+
+  img {
+    position: absolute;
+  }
+
   .pointsBox {
     background-color: rgba(134, 43, 82, 0.7);
     height: 40%;
