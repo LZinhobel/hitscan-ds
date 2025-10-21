@@ -10,25 +10,30 @@
     name: string;
   }
 
-  //TODO Sanitize Inputs, make sure both selected
+  //TODO Sanitize Inputs
 
   let searchTerm1 = $state("");
   let searchTerm2 = $state("");
   let dropdown1visible = $state(false);
   let dropdown2visible = $state(false);
   let allPlayers: Player[] = $state([]);
-  let selectedPlayers: (Player | null)[] = $state([null, null]);
+  
+  let bothSelected = $derived(
+    $playerState.players[0] !== null && $playerState.players[1] !== null
+  );
+
+  $inspect($playerState.players);
 
   let filteredPlayers1 = $derived(
     allPlayers.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm1.toLowerCase()),
-    ),
+      p.name.toLowerCase().includes(searchTerm1.toLowerCase())
+    )
   );
 
   let filteredPlayers2 = $derived(
     allPlayers.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm2.toLowerCase()),
-    ),
+      p.name.toLowerCase().includes(searchTerm2.toLowerCase())
+    )
   );
 
   onMount(async () => {
@@ -73,10 +78,12 @@
     <div class="player-input">
       <input
         type="text"
+        id="p1Input"
         value={searchTerm1}
         oninput={(e) => (searchTerm1 = e.target!.value)}
         onfocus={() => (dropdown1visible = true)}
         onblur={() => (dropdown1visible = false)}
+        required
         placeholder="Player 1..."
       />
       {#if dropdown1visible}
@@ -117,10 +124,12 @@
     <div class="player-input">
       <input
         type="text"
+        id="p2Input"
         value={searchTerm2}
         oninput={(e) => (searchTerm2 = e.target!.value)}
         onfocus={() => (dropdown2visible = true)}
         onblur={() => (dropdown2visible = false)}
+        required
         placeholder="Player 2..."
       />
       {#if dropdown2visible}
@@ -159,7 +168,23 @@
     </div>
   </div>
 
-  <a href="/setup/camera">
+  <a
+    href={bothSelected ? "/setup/camera" : "#"}
+    onclick={() => {
+      if (!bothSelected) {
+        if ($playerState.players[0] == null && $playerState.players[1] == null) {
+          document.getElementById("p1Input")!.style.border = `3px solid #f00`;
+          document.getElementById("p2Input")!.style.border = `3px solid #f00`;
+        } else if ($playerState.players[0] == null) {
+          document.getElementById('p2Input')!.style.border = "3px solid #fff";
+          document.getElementById("p1Input")!.style.border = `3px solid #f00`;
+        } else if ($playerState.players[1] == null){
+          document.getElementById('p1Ipnut')!.style.border = "3px solid #fff";
+          document.getElementById("p2Input")!.style.border = `3px solid #f00`;
+        }
+      }
+    }}
+  >
     <Button text="Next" />
   </a>
 </section>

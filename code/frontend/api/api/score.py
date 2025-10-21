@@ -1,13 +1,17 @@
+from typing import List
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+from api.players import playerDto
 from models import Score, Game
 
 router = APIRouter(prefix="/score", tags=["Score"])
 
 class scoreDto(BaseModel):
     id: int
-    player: int
-    game: int
+    player_id: int
+    game_id: int
     score: int
 
 class scoreCreationObject(BaseModel):
@@ -42,4 +46,12 @@ async def score(score: scoreCreationObject):
         player=score.player,
         game=score.game,
         score=returnScore
+    )
+@router.get("/{player_id}", response_model=List[scoreDto])
+async def get_scores(player_id: int):
+    return await Score.filter(player_id=player_id).values(
+        "id",
+        "score",
+        "player_id",
+        "game_id"
     )
