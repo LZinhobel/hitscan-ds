@@ -19,6 +19,12 @@
   let selectedPlayer = $state("0");
   let allPlayers: Player[] = $state([]);
 
+  let mostCommonScore = $state(0);
+  let hitPercentage = $state(0.0);
+  let dartsThrown = $state(0);
+  let totalScore = $state(0);
+  let winPercentage= $state(0.0);
+
   onMount(async () => {
     const res = await fetch("http://localhost:8000/player/");
     allPlayers = await res.json();
@@ -27,12 +33,36 @@
   async function loadStats(index: Number) {
     const scoresRes = await fetch(`http://localhost:8000/score/${index}`);
     let scores: Score[] = await scoresRes.json();
-    console.log(scores);
 
-    const scoreCounts: Record<number, number> = {};
-    for (const s of scores) {
+    const percentageRes = await fetch(`http://localhost:8000/game/winPercentage/${index}`)
+    winPercentage = parseFloat(await percentageRes.text());
+
+    if (!scores.length) return;
+
+    dartsThrown = scores.length;
+
+    let scoreCounts: Record<number, number> = {};
+    for (let s of scores) {
       scoreCounts[s.score] = (scoreCounts[s.score] || 0) + 1;
     }
+
+    let nonZeroScores = scores.filter((s) => s.score > 0);
+    let hits = nonZeroScores.length;
+
+    hitPercentage = parseFloat(((hits / scores.length) * 100).toFixed(2));
+
+    let nonZeroCounts = Object.entries(scoreCounts).filter(
+      ([score]) => Number(score) > 0
+    );
+
+    mostCommonScore = parseInt(
+      nonZeroCounts.sort((a, b) => Number(b[1]) - Number(a[1]))[0][0]
+    );
+
+    for(let i = 0; i < scores.length; i++){
+      totalScore += scores[i].score;
+    }
+    
 
     let labels = Object.keys(scoreCounts);
     let data = Object.values(scoreCounts);
@@ -77,8 +107,14 @@
   {#if selectedPlayer != "0"}
     <div id="row">
       <div id="stats">
-        <h2>Most common Shot:</h2>
-        <h2>Hit Percentage:</h2>
+        <h2>Most Common Hit: {mostCommonScore}</h2>
+        <h2>Hit Percentage: {hitPercentage}%</h2>
+        <h2>Darts Thrown: {dartsThrown}</h2>
+        <h2>Total Score: {totalScore}</h2>
+        {#if winPercentage != 0.0}
+          <h2>Win Percentage: {winPercentage}%</h2>
+        {/if}
+        
       </div>
       <div id="shotsDiv">
         <canvas id="shots"></canvas>

@@ -315,6 +315,8 @@
     };
 
     setCalibration(data);
+    console.log(data);
+
 
     const json = JSON.stringify(data, null, 2);
     rulesState.isCalibrated = true;

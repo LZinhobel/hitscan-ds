@@ -43,10 +43,12 @@ async def score(score: scoreCreationObject):
 
     return scoreDto(
         id=score_obj.id,
-        player=score.player,
-        game=score.game,
+        player_id=score.player,
+        game_id=score.game,
         score=returnScore
     )
+
+
 @router.get("/{player_id}", response_model=List[scoreDto])
 async def get_scores(player_id: int):
     return await Score.filter(player_id=player_id).values(

@@ -1,6 +1,8 @@
 from datetime import datetime
 
 from fastapi import APIRouter
+from tortoise.expressions import Q
+
 from models import Game, Player
 from pydantic import BaseModel, ConfigDict
 from .players import playerDto
@@ -64,3 +66,16 @@ async def update_winner(gameId: int, winnerId: int):
     await Game.filter(id=gameId).update(winnerId = winnerId)
     return True
 
+@router.get("/winPercentage/{playerId}", response_model=float)
+async def get_winner_percentage(playerId: int):
+    wins = await Game.filter(winner_id=playerId).count()
+
+    total_games = await Game.filter(
+        (Q(player1_id=playerId) | Q(player2_id=playerId))
+    ).count()
+
+    if total_games == 0:
+        return 0.0  # Avoid division by zero
+
+    win_percentage = wins / total_games * 100
+    return round(win_percentage, 2)

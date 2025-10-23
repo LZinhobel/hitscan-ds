@@ -25,9 +25,14 @@
 
   let hasWon = writable(0);
 
+  let player1Hits: String[] = $state(["", "", ""]);
+  
+  
+  let player2Hits: String[] = $state(["", "", ""]);
+
   const socket = io("http://localhost:5000/");
 
-  let canvas: HTMLCanvasElement;
+  let canvas: HTMLCanvasElement|null = $state(null)
   let ctx: CanvasRenderingContext2D | null = null;
   let dartboard: HTMLImageElement;
   const calibration = get(calibrationStore);
@@ -56,12 +61,19 @@
     ctx = canvas.getContext("2d");
     canvas.width = dartboard.width;
     canvas.height = dartboard.height;
+
     setTimeout(() => {
       draw();
     }, 500);
   });
 
   socket.on("dart_hit", (e) => {
+    if (currentPlayer === 0) {
+      player1Hits[shotsThisTurn] = e.score;
+    } else {
+      player2Hits[shotsThisTurn] = e.score;
+    }
+
     const { hitType, score } = parseSocketScore(e.score);
     hitCords.push(e.coords);
     draw();
@@ -114,6 +126,7 @@
   }
 
   function clearDartboard() {
+    hitCords = [];
     ctx!.clearRect(0, 0, canvas.width, canvas.height);
     ctx!.drawImage(dartboard, 0, 0, canvas.width, canvas.height);
   }
@@ -156,7 +169,7 @@
   async function subtractPoints(
     playerIndex: number,
     score: number,
-    hitType: "single" | "double" | "triple" | "miss",
+    hitType: "single" | "double" | "triple" | "miss"
   ) {
     if (isNaN(score) || score > 60 || score < 0) return;
 
@@ -199,7 +212,13 @@
 
       if (shotsThisTurn >= 3) {
         clearDartboard();
-        currentPlayer = currentPlayer === 0 ? 1 : 0;
+        if (currentPlayer === 0) {
+          currentPlayer = 1;
+        } else if(currentPlayer === 1){
+          currentPlayer = 0;
+          player1Hits = ["", "", ""];
+          player2Hits = ["", "", ""];
+        }
         shotsThisTurn = 0;
       }
 
@@ -250,13 +269,37 @@
     <div class="pointsBox">
       <h2>{$playerState.players[0]?.name}</h2>
 
-      <div class="titleBox" id="ptsTitleBox"><p>Pts</p></div>
+      <div class="hitsBox">
+        {#each player1Hits as hit}
+            <div class="hit">
+            {#if hit == ""}
+            {:else if hit == '0'}
+            <p style="color:red">X</p>
+            {:else}
+            <p>{hit}</p>
+            {/if}
+            </div>
+        {/each}
+      </div>
+
       <div class="titleBox" id="ptsBox"><p>{playerPoints[0]}</p></div>
     </div>
     <div class="pointsBox">
       <h2>{$playerState.players[1]?.name}</h2>
 
-      <div class="titleBox" id="ptsTitleBox"><p>Pts</p></div>
+      <div class="hitsBox">
+        {#each player2Hits as hit}
+          <div class="hit">
+            {#if hit == ""}
+            {:else if hit == '0'}
+            <p style="color:red">X</p>
+            {:else}
+            <p>{hit}</p>
+            {/if}
+          </div>
+        {/each}
+      </div>
+
       <div class="titleBox" id="ptsBox"><p>{playerPoints[1]}</p></div>
     </div>
   </div>
@@ -274,7 +317,6 @@
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    flex: 0.6;
     background-color: #180a10;
     margin: 0;
     height: 100vh;
@@ -300,47 +342,57 @@
   p {
     font-family: "Roboto", sans-serif;
     font-weight: 700;
-    font-size: 14px;
+    vertical-align:center;
+    margin:0;
+    font-size:50px;
     color: #000;
   }
 
-  input {
-    width: 100%;
-    font-family: "Roboto", sans-serif;
+  .hitsBox{
+    display: flex;
+    flex-direction: row;
+    justify-content:space-between;
+    grid-area: 2/2/3/5;
+  }
+
+  .hit{
+    height:60%;
+    width:30%;
+    justify-content:center;
+    vertical-align:middle;
     background-color: #d9d9d9;
-    border: none;
-    box-sizing: border-box;
-    color: #000;
-    font-size: 14px;
-    font-weight: 700;
+    border-radius: 8px;
   }
 
-  input:focus {
-    outline: none;
-    border: 2px solid #dca1ba;
+  .hit p{
+    text-align:center;
+    font-family: "Roboto", sans-serif;
+    color:black;
+    font-size:40px;
+    margin: 0;
   }
 
   .titleBox {
     display: flex;
     justify-content: center;
-    height: 80%;
-
+    height: 4vh;
+    border-radius:8px;
     background-color: #d9d9d9;
   }
 
-  #ptsTitleBox {
-    grid-area: 1/6/1/6;
-  }
 
   #ptsBox {
     height: 100%;
-    grid-area: 3/6/3/6;
+    width: 100%;
+    padding-top:40%;
+    margin-right: 50%;
+    grid-area: 2/6/3/7;
   }
 
   #pointView {
     display: flex;
     flex-direction: column;
-    height: 60%;
+    height: 80%;
     width: 40%;
   }
   #boardView {
@@ -362,7 +414,7 @@
 
   .pointsBox {
     background-color: rgba(134, 43, 82, 0.7);
-    height: 40%;
+    height: 30%;
     margin-bottom: 10%;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
