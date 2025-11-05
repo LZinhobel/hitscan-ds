@@ -23,33 +23,30 @@
   <h2>Select a Ruleset:</h2>
 
   <div id="rulesets">
-    <div class="ruleset">
+    <div class="ruleset toggle">
       <input
         type="checkbox"
         id="301"
         name="301"
-        onclick={() => {
-          checked501 = false;
-        }}
+        onclick={() => { checked501 = false; }}
         bind:checked={checked301}
       />
-      <label for="301">301</label>
+      <label class={checked301 ? "active" : ""} for="301">301</label>
     </div>
-    <div class="ruleset">
+
+    <div class="ruleset toggle">
       <input
         type="checkbox"
         id="501"
         name="501"
-        onclick={() => {
-          checked301 = false;
-        }}
+        onclick={() => { checked301 = false; }}
         bind:checked={checked501}
       />
-      <label for="501">501</label>
+      <label class={checked501 ? "active" : ""} for="501">501</label>
     </div>
-    <div class="ruleset">
-      <label id="variantLabel" for="Variant">Variant</label>
-      <select name="variant" id="variant" bind:value={selectedVariant}>
+
+    <div class="ruleset selectWrap">
+      <select name="variant" id="variant" bind:value={selectedVariant} class="styledSelect">
         <option value="standard">Standard</option>
         <option value="double-in">Double In</option>
         <option value="double-out">Double Out</option>
@@ -61,7 +58,6 @@
     <a href="/stats">
       <Button text="Stats" />
     </a>
-
     <a onclick={() => setRules()} href="/setup">
       <Button text="Next" />
     </a>
@@ -97,31 +93,7 @@
     margin-bottom: 7vh;
   }
 
-  label {
-    font-family: "Roboto", sans-serif;
-    font-weight: 400;
-    font-size: 22px;
-    grid-area: 2 / 2 / 2 / 4;
-  }
-
-  #variantLabel {
-    margin-left: 10%;
-    grid-area: 2 / 1 / 2 / 1;
-  }
-
-  input {
-    grid-area: 2 / 1 / 2 / 1;
-    cursor: pointer;
-  }
-
-  select {
-    width: 300%;
-    background-color: #fff;
-    border: 2px solid black;
-    border-radius: 4px;
-    grid-area: 2 / 3 / 2 / 4;
-  }
-
+  /* Ruleset row */
   #rulesets {
     width: 90%;
     height: 5vh;
@@ -129,18 +101,114 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;    /* center children vertically */
     margin-right: 5%;
     margin-bottom: 10vh;
+    gap: 1rem;
   }
 
+  /* base ruleset sizing so all three have exact same box */
   .ruleset {
-    background-color: #dca1ba;
-    width: 20%;
+    width: 20%;             /* same width for all three boxes */
     height: 100%;
-    display: grid;
-    border-radius:6px;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;    /* center content vertically */
+    justify-content: center;/* center content horizontally */
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* preserve earlier visual for the original cards */
+  .ruleset.toggle {
+    background-color: #2a0f1f;
+    border: 2px solid #dca1ba;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s;
+  }
+
+  .ruleset.toggle:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Hide native checkbox input but keep it accessible to bindings */
+  .ruleset.toggle input {
+    opacity: 0;
+    position: absolute;
+    pointer-events: none;
+  }
+
+  /* Label styled like a button, fills the box */
+  .ruleset.toggle label {
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    color: #f6edf1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    font-size: 26px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+    box-sizing: border-box;
+    padding: 0 8px;
+    text-align: center;
+  }
+
+  .ruleset.toggle label.active {
+    background-color: #dca1ba;
+    color: #180a10;
+  }
+
+  /* Variant container uses the exact same outer sizing and border as toggles */
+  .selectWrap {
+    background-color: #2a0f1f;
+    border: 2px solid #dca1ba;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;    /* center label and select horizontally */
+    gap: 4px;
+    box-sizing: border-box;
+    padding: 4px 6px;       /* keep padding small so inner select fits */
+  }
+
+  .selectWrap label {
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+    color: #f6edf1;
+    font-size: 16px;
+    margin: 0;
+    line-height: 1;
+    text-align: center;
+    user-select: none;
+  }
+
+  /* Make select never exceed parent width and visually match the button look */
+  .styledSelect {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background-color: #dca1ba;
+    font-family: "Roboto", sans-serif;
+    font-size: 16px;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .styledSelect:focus {
+    outline: 2px solid #f6edf1;
   }
 
   #buttonRow {
