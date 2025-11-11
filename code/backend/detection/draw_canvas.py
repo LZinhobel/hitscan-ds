@@ -15,7 +15,7 @@ def draw_sector_lines(canvas, outer_ring, rotation_deg, offset_x, offset_y, scal
     cx, cy = outer_ring[0:2]
     radius = outer_ring[2] * max(outer_ring[3], outer_ring[4])
     for i in range(20):
-        angle = np.deg2rad(i * 18 + rotation_deg - 90)
+        angle = np.deg2rad(i * 18 + rotation_deg)
 
         scaled_cos = np.cos(angle) * outer_ring[3] * scale * stretch_x
         scaled_sin = np.sin(angle) * outer_ring[4] * scale * stretch_y
