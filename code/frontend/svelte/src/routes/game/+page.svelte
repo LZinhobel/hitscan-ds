@@ -446,7 +446,7 @@ function handleDartHit(e: any) {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    background-color: #180a10;
+    background-color: #000;
     margin: 0;
     height: 100vh;
     overflow: hidden;
@@ -454,14 +454,14 @@ function handleDartHit(e: any) {
 
   h1 {
     font-family: "Roboto", sans-serif;
-    color: #f6edf1;
+    color: #eeecec;
     font-size: 50px;
     font-weight: 700;
   }
 
   h2 {
     font-family: "Nova Flat", system-ui;
-    color: #f6edf1;
+    color: #eeecec;
     font-size: 36px;
     grid-area: 1/1/2/3;
     height: 100%;
@@ -541,7 +541,7 @@ function handleDartHit(e: any) {
   }
 
   .pointsBox {
-    background-color: rgba(134, 43, 82, 0.7);
+    background-color: #733636;
     height: 30%;
     margin-bottom: 10%;
     display: grid;
@@ -559,14 +559,15 @@ function handleDartHit(e: any) {
   font-size: 16px;
   font-weight: bold;
   border-radius: 6px;
-  background-color: #864352;
+  background-color: #733636;
   color: #fff;
   border: none;
   cursor: pointer;
+  margin-bottom: 3vh;
 }
 
 #boardControls button:hover {
-  background-color: #a05570;
+  background-color: #c35757;
 }
 
 </style>

@@ -8,7 +8,7 @@
 	button {
 		width: 15vw;
 		height: 7vh;
-		background-color: #862b52;
+		background-color: #733636;
 		color: #f6edf1;
 		font-size: 40px;
 		font-weight: 300;

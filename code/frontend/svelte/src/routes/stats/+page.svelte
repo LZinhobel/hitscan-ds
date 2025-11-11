@@ -130,7 +130,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    background-color: #180a10;
+    background-color: #000;
     padding-top: 3vh;
     height: 87vh;
     overflow: hidden;
@@ -140,7 +140,7 @@
     margin-left: 5vw;
     width: 20vw;
     height: 5vh;
-    background-color: #180a10;
+    background-color: #000;
     color: #fff;
     font-size: 25px;
     border: none;
@@ -180,7 +180,7 @@
     font-family: "Roboto", sans-serif;
     font-weight: 300;
     font-size: 30px;
-    color: #f6edf1;
+    color: #cecece;
     margin-bottom: 3vh;
   }
 </style>

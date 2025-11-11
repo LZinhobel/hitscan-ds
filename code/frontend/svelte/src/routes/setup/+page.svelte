@@ -196,7 +196,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #180a10;
+    background-color: #000;
     padding-top: 20vh;
     height: 80vh;
     overflow: hidden;
@@ -205,7 +205,7 @@
     font-family: "Roboto", sans-serif;
     font-weight: 300;
     font-size: 64px;
-    color: #f6edf1;
+    color: #cecece;
     margin-bottom: 3vh;
   }
   #inputs {
@@ -217,7 +217,7 @@
     width: 60%;
   }
   input {
-    background-color: rgba(220, 161, 186, 0.4);
+    background-color: #733636;
     border-radius: 16px;
     border: 3px solid #fff;
     height: 5vh;
@@ -227,7 +227,7 @@
     font-family: "Roboto", sans-serif;
   }
   input:focus {
-    border: 3px solid #dca1ba;
+    border: 3px solid #c35757;
     outline: none;
   }
   a {

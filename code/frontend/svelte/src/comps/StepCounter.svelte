@@ -34,15 +34,15 @@
 		height: 32px;
 		border-radius: 50%;
 		border: 2px solid #ccc;
-		background-color: #2a002b;
+		background-color: #733636;
 		color: white;
 		font-weight: bold;
 		transition: all 0.3s;
 	}
 
 	.step.active {
-		background-color: #b4457c;
-		border-color: #b4457c;
+		background-color: #c35757;
+		border-color: #c35757;
 	}
 
 	.line {
@@ -54,6 +54,6 @@
 	}
 
 	.line.active {
-		background-color: #b4457c;
+		background-color: #c35757;
 	}
 </style>

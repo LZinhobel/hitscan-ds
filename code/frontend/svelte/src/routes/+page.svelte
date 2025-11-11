@@ -73,14 +73,14 @@
     justify-content: center;
     align-items: center;
     flex: 0.6;
-    background-color: #180a10;
+    background-color: #000000;
     margin: 0;
     height: 100vh;
   }
 
   h1 {
     font-family: "Nova Flat", system-ui;
-    color: #f6edf1;
+    color: #eeecec;
     font-size: 120px;
     letter-spacing: 30%;
   }
@@ -89,7 +89,7 @@
     font-family: "Roboto", sans-serif;
     font-weight: 300;
     font-size: 64px;
-    color: #f6edf1;
+    color: #eeecec;
     margin-bottom: 7vh;
   }
 
@@ -121,8 +121,8 @@
 
   /* preserve earlier visual for the original cards */
   .ruleset.toggle {
-    background-color: #2a0f1f;
-    border: 2px solid #dca1ba;
+    background-color: #733636;
+    border: 2px solid #fff;
     cursor: pointer;
     position: relative;
     transition: transform 0.15s;
@@ -143,7 +143,7 @@
   .ruleset.toggle label {
     font-family: "Roboto", sans-serif;
     font-weight: 500;
-    color: #f6edf1;
+    color: #ececec;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -158,14 +158,14 @@
   }
 
   .ruleset.toggle label.active {
-    background-color: #dca1ba;
+    background-color: #c35757;
     color: #180a10;
   }
 
   /* Variant container uses the exact same outer sizing and border as toggles */
   .selectWrap {
-    background-color: #2a0f1f;
-    border: 2px solid #dca1ba;
+    background-color: #733636;
+    border: 2px solid #c35757;
     border-radius: 6px;
     display: flex;
     flex-direction: column;
@@ -179,7 +179,7 @@
   .selectWrap label {
     font-family: "Roboto", sans-serif;
     font-weight: 500;
-    color: #f6edf1;
+    color: #ececec;
     font-size: 16px;
     margin: 0;
     line-height: 1;
@@ -195,9 +195,11 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    background-color: #dca1ba;
+    color:#ececec;
+    text-align:center;
+    font-size: 24px;
+    background-color: #733636;
     font-family: "Roboto", sans-serif;
-    font-size: 16px;
     border: none;
     padding: 6px 10px;
     border-radius: 4px;
@@ -207,9 +209,7 @@
     text-overflow: ellipsis;
   }
 
-  .styledSelect:focus {
-    outline: 2px solid #f6edf1;
-  }
+
 
   #buttonRow {
     width: 60vw;
