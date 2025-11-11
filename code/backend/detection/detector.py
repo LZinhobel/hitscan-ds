@@ -53,7 +53,7 @@ def _estimate_tip(contour, frame_debug=None):
     return tip
 
 class DartDetector:
-    def __init__(self, still_time=0.4, motion_thresh=13, min_blob_area=50):
+    def __init__(self, still_time=0.4, motion_thresh=20, min_blob_area=50):
         self.bg_frame = None
         self.last_movement = time.time()
         self.still_time = still_time
