@@ -1,16 +1,11 @@
-import os
 from time import sleep
-
-import numpy as np
-from flask import Flask,request,jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
-import threading
-import json
-import cv2
-from fastapi import WebSocket
-from file_handler import *
-from classifier import *
+from flask_socketio import SocketIO
+import cv2, os, numpy as np
+from threading import Thread
+from file_handler import load_rings, load_lines, save_rings, save_lines
+from classifier import classify_ring, classify_sector, classify_field
 from detector import DartDetector
 from draw_canvas import draw_ellipses, draw_sector_lines
 
@@ -20,6 +15,10 @@ NUM_RINGS = len(ring_data)
 
 clicked_points = []
 canvas_size = None
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 def select_camera(max_cams=5):
     caps = []
@@ -58,6 +57,10 @@ def mouse_callback(event, x, y, flags, param):
         field = classify_field(ring_ids, sector_id)
         print(f"[Click] Point at ({x}, {y}) → {field}")
 
+        data = {"score": field, "coords": {"x": x, "y": y}}
+        socketio.emit("dart_hit", data)
+        print(f"[WS] Sent click data: {data}")
+
 def draw_virtual_canvas():
     canvas = np.zeros((
         canvas_size[1],
@@ -80,18 +83,6 @@ def draw_virtual_canvas():
 
     return canvas
 
-app = Flask(__name__)
-CORS(app,resources={r"/*":{"origins":"*"}})
-socketio = SocketIO(app,cors_allowed_origins="*")
-
-async def _send_safe(ws: WebSocket, obj: dict):
-    try:
-        await ws.send_text(json.dumps(obj))
-    except Exception:
-        try:
-            await ws.close()
-        except Exception:
-            pass
 
 @app.route("/")
 def index():
@@ -101,27 +92,22 @@ def index():
 def calibrate():
     try:
         data = request.get_json(force=True)
-    except Exception:
-        return jsonify({"type": "error", "msg": "Invalid JSON"}), 400
+        rings = data.get("rings", [])
+        lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
 
-    rings = data.get("rings", [])
-    lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
+        rings_for_save = []
+        for r in rings:
+            try:
+                cx = float(r["x"])
+                cy = float(r["y"])
+                scale = float(r["radius"])
+                stretch_x = float(r.get("scaleX", 1.0))
+                stretch_y = float(r.get("scaleY", 1.0))
+                rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
+            except Exception as e:
+                print("[WS] Bad ring entry:", r, "error:", e)
 
-    rings_for_save = []
-    for r in rings:
-        try:
-            cx = float(r["x"])
-            cy = float(r["y"])
-            scale = float(r["radius"])
-            stretch_x = float(r.get("scaleX", 1.0))
-            stretch_y = float(r.get("scaleY", 1.0))
-            rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
-        except Exception as e:
-            print("[WS] Bad ring entry:", r, "error:", e)
-
-    try:
         save_rings(rings_for_save)
-
         save_lines(
             float(lines.get("rotation", 0.0)),
             float(lines.get("offsetX", 0.0)),
@@ -130,16 +116,44 @@ def calibrate():
             float(lines.get("stretchX", 1.0)),
             float(lines.get("stretchY", 1.0)),
         )
+
         print("[POST] Calibration saved")
-        sleep(5)
-        main()
+        sleep(3)
+
+        Thread(target=main, daemon=True).start()
+
         return jsonify({"type": "saved", "msg": "Calibration saved"})
     except Exception as e:
         print("[POST] save error:", e)
         return jsonify({"type": "error", "msg": f"Failed to save calibration: {e}"}), 500
 
-def start_socketio():
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+
+@app.get("/last_calibration")
+def get_last_calibration():
+    try:
+        rings, _ = load_rings()
+        lines = load_lines()
+        return jsonify({
+            "rings": [
+                {
+                    "x": float(r[0]),
+                    "y": float(r[1]),
+                    "radius": float(r[2]),
+                    "scaleX": float(r[3]),
+                    "scaleY": float(r[4])
+                } for r in rings
+            ],
+            "lines": {
+                "rotation": float(lines[0]),
+                "offsetX": float(lines[1]),
+                "offsetY": float(lines[2]),
+                "scale": float(lines[3]),
+                "stretchX": float(lines[4]),
+                "stretchY": float(lines[5]),
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": f"Failed to load calibration {e}"}), 500
 
 def main():
     global canvas_size
@@ -153,16 +167,18 @@ def main():
         print("Failed to read from camera.")
         return
 
+    global ring_data, sector_config
+    ring_data, _ = load_rings()
+    sector_config = load_lines()
+
     canvas_size = (frame.shape[1], frame.shape[0])
     detector = DartDetector()
     print("Press 'q' to quit. Throw darts and watch for results...")
 
-    def on_thresh_change(val):
-        detector.motion_thresh = val
-
     cv2.namedWindow("Dartboard View")
     cv2.setMouseCallback("Dartboard View", mouse_callback)
-    cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100, on_thresh_change)
+    cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
+                       lambda val: setattr(detector, "motion_thresh", val))
 
     while True:
         ret, frame = cap.read()
@@ -182,8 +198,7 @@ def main():
 
         for (x, y, w, h) in boxes:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            cv2.putText(frame, "Blob", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5, (0, 0, 255), 1)
+            cv2.putText(frame, "Blob", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
         for (x, y) in clicked_points:
             cv2.circle(frame, (x, y), 6, (255, 0, 255), -1)
@@ -192,10 +207,7 @@ def main():
             ring_ids = classify_ring(int(x), int(y))
             sector_id = classify_sector(int(x), int(y))
             score = classify_field(ring_ids, sector_id)
-            data = {
-                "score": score,
-                "coords": {"x": int(x), "y": int(y)}
-            }
+            data = {"score": score, "coords": {"x": int(x), "y": int(y)}}
             socketio.emit("dart_hit", data)
             print(f"[Auto] Sent: {data}")
 
@@ -241,7 +253,9 @@ def main():
 
     cap.release()
     cv2.destroyAllWindows()
-    os.remove("last_detected_dart.png")
+    if os.path.exists("last_detected_dart.png"):
+        os.remove("last_detected_dart.png")
+
 
 if __name__ == "__main__":
-    start_socketio()
+    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
