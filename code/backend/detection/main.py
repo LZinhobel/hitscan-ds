@@ -16,6 +16,9 @@ NUM_RINGS = len(ring_data)
 clicked_points = []
 canvas_size = None
 
+camera_active = False
+current_cap = None
+stop_camera_flag = False
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
@@ -127,6 +130,32 @@ def calibrate():
         print("[POST] save error:", e)
         return jsonify({"type": "error", "msg": f"Failed to save calibration: {e}"}), 500
 
+@app.get("/close_camera")
+def close_camera():
+    global current_cap, stop_camera_flag, camera_active
+
+    if not camera_active:
+        return jsonify({"status": "no_camera_active"})
+
+    stop_camera_flag = True  # Tell main loop to stop
+
+    if current_cap is not None:
+        try:
+            current_cap.release()
+            current_cap = None
+        except Exception as e:
+            print("Error releasing camera:", e)
+
+    camera_active = False
+
+    # Close any OpenCV windows
+    try:
+        cv2.destroyAllWindows()
+    except:
+        pass
+
+    return jsonify({"status": "camera_closed"})
+
 
 @app.get("/last_calibration")
 def get_last_calibration():
@@ -154,18 +183,24 @@ def get_last_calibration():
         })
     except Exception as e:
         return jsonify({"error": f"Failed to load calibration {e}"}), 500
-
 def main():
-    global canvas_size
+    global canvas_size, current_cap, camera_active, stop_camera_flag
+
+    stop_camera_flag = False
     cam_index = select_camera()
     if cam_index is None:
         return
 
     cap = cv2.VideoCapture(cam_index)
+    current_cap = cap
+    camera_active = True
+
     ret, frame = cap.read()
     if not ret:
         print("Failed to read from camera.")
+        camera_active = False
         return
+
 
     global ring_data, sector_config
     ring_data, _ = load_rings()
@@ -180,7 +215,7 @@ def main():
     cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
                        lambda val: setattr(detector, "motion_thresh", val))
 
-    while True:
+    while not stop_camera_flag:
         ret, frame = cap.read()
         if not ret:
             break
@@ -252,6 +287,8 @@ def main():
             break
 
     cap.release()
+    current_cap = None
+    camera_active = False
     cv2.destroyAllWindows()
     if os.path.exists("last_detected_dart.png"):
         os.remove("last_detected_dart.png")

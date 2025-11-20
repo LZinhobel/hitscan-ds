@@ -51,6 +51,7 @@
         <option value="double-in">Double In</option>
         <option value="double-out">Double Out</option>
       </select>
+
     </div>
   </div>
 
@@ -189,9 +190,6 @@
 
   /* Make select never exceed parent width and visually match the button look */
   .styledSelect {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;

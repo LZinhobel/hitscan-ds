@@ -23,7 +23,7 @@
   let hitPercentage = $state(0.0);
   let dartsThrown = $state(0);
   let totalScore = $state(0);
-  let winPercentage= $state(0.0);
+  let winPercentage = $state(0.0);
 
   onMount(async () => {
     const res = await fetch("http://localhost:8000/player/");
@@ -33,8 +33,15 @@
   async function loadStats(index: Number) {
     const scoresRes = await fetch(`http://localhost:8000/score/${index}`);
     let scores: Score[] = await scoresRes.json();
+    mostCommonScore = 0;
+    hitPercentage = 0.0;
+    dartsThrown = 0;
+    totalScore = 0;
+    winPercentage = 0.0;
 
-    const percentageRes = await fetch(`http://localhost:8000/game/winPercentage/${index}`)
+    const percentageRes = await fetch(
+      `http://localhost:8000/game/winPercentage/${index}`
+    );
     winPercentage = parseFloat(await percentageRes.text());
 
     if (!scores.length) return;
@@ -59,31 +66,49 @@
       nonZeroCounts.sort((a, b) => Number(b[1]) - Number(a[1]))[0][0]
     );
 
-    for(let i = 0; i < scores.length; i++){
+    for (let i = 0; i < scores.length; i++) {
       totalScore += scores[i].score;
     }
-    
 
-    let labels = Object.keys(scoreCounts);
-    let data = Object.values(scoreCounts);
+    let sortedCounts = Object.entries(scoreCounts).filter(([score]) => Number(score) > 0).sort((a,b) => Number(b[1]) - Number(a[1])).slice(0,10); 
+
+    // Extract labels & values
+    let labels = sortedCounts.map(([score]) => score);
+    let data = sortedCounts.map(([_, count]) => count);
 
     const existingChart = Chart.getChart("shots");
     if (existingChart) existingChart.destroy();
 
     new Chart(document.getElementById("shots") as HTMLCanvasElement, {
-      type: "pie",
+      type: "bar",
       data: {
         labels: labels,
-        datasets: [{ data: data }],
+        datasets: [{ data: data, backgroundColor: "#733636" }],
       },
       options: {
         plugins: {
           legend: {
             display: false,
-          },
+          }
         },
       },
     });
+  }
+
+  async function resetStats() {
+    const res = await fetch(
+      `http://localhost:8000/score/reset/${selectedPlayer}`,
+      {
+        method: "DELETE",
+      }
+    );
+    console.log(res);
+    selectedPlayer = "0";
+    mostCommonScore = 0;
+    hitPercentage = 0.0;
+    dartsThrown = 0;
+    totalScore = 0;
+    winPercentage = 0.0;
   }
 </script>
 
@@ -107,18 +132,35 @@
   {#if selectedPlayer != "0"}
     <div id="row">
       <div id="stats">
-        <h2>Most Common Hit: {mostCommonScore}</h2>
-        <h2>Hit Percentage: {hitPercentage}%</h2>
-        <h2>Darts Thrown: {dartsThrown}</h2>
-        <h2>Total Score: {totalScore}</h2>
+        <div class="statText">
+          <h2 class="accent">Most Common Hit:</h2>
+          <h2>{mostCommonScore}</h2>
+        </div>
+        <div class="statText">
+          <h2 class="accent">Hit Percentage:</h2>
+          <h2>{hitPercentage}</h2>
+        </div>
+        <div class="statText">
+          <h2 class="accent">Darts Thrown:</h2>
+          <h2>{dartsThrown}</h2>
+        </div>
+        <div class="statText">
+          <h2 class="accent">Total Score:</h2>
+          <h2>{totalScore}</h2>
+        </div>
         {#if winPercentage != 0.0}
-          <h2>Win Percentage: {winPercentage}%</h2>
+          <div class="statText">
+            <h2 class="accent">Win Percentage:</h2>
+            <h2>{winPercentage}</h2>
+          </div>
         {/if}
-        
       </div>
       <div id="shotsDiv">
         <canvas id="shots"></canvas>
       </div>
+    </div>
+    <div id="button" onclick={() => resetStats()}>
+      <Button text="Reset" />
     </div>
   {/if}
 </section>
@@ -161,6 +203,7 @@
     display: flex;
     flex-direction: row;
     margin-top: 5vh;
+    height: 60vh;
     margin-left: 5vw;
   }
 
@@ -176,11 +219,28 @@
     width: 35vw;
   }
 
+  .statText {
+    display: flex;
+    flex-direction: row;
+  }
+
   h2 {
     font-family: "Roboto", sans-serif;
     font-weight: 300;
     font-size: 30px;
     color: #cecece;
     margin-bottom: 3vh;
+  }
+
+  .accent {
+    font-weight: 600;
+    color: #c35757;
+    margin-right: 10px;
+  }
+
+  #button {
+    display: flex;
+    width: 100vw;
+    justify-content: center;
   }
 </style>

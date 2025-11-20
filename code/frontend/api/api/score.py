@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, HTTPException
+from fastapi.openapi.models import Response
 from pydantic import BaseModel
 
 from api.players import playerDto
@@ -57,3 +58,8 @@ async def get_scores(player_id: int):
         "player_id",
         "game_id"
     )
+
+@router.delete("/reset/{player_id}")
+async def reset_scores(player_id: int):
+    deleted_count = await Score.filter(player_id=player_id).delete()
+    return  {"deleted": deleted_count}
