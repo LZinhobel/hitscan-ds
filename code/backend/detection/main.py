@@ -184,6 +184,7 @@ def get_last_calibration():
     except Exception as e:
         return jsonify({"error": f"Failed to load calibration {e}"}), 500
 def main():
+    Y_OFFSET = -65
     global canvas_size, current_cap, camera_active, stop_camera_flag
 
     stop_camera_flag = False
@@ -204,7 +205,32 @@ def main():
 
     global ring_data, sector_config
     ring_data, _ = load_rings()
+    print(ring_data)
     sector_config = load_lines()
+    print(sector_config)
+
+    for ring in ring_data:
+        ring[1] -= Y_OFFSET
+
+    new_sectors = []
+    for sector in sector_config:
+        # Only process tuples or lists with enough coordinates
+        if isinstance(sector, (tuple, list)) and len(sector) >= 4:
+            # Some may include stretch_x and stretch_y, some not
+            if len(sector) == 6:
+                x1, y1, x2, y2, sx, sy = sector
+                new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET, sx, sy))
+            elif len(sector) == 4:
+                x1, y1, x2, y2 = sector
+                new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET))
+            else:
+                # Unexpected but valid format → copy unchanged
+                new_sectors.append(sector)
+        else:
+            # Not a tuple/list → leave as-is
+            new_sectors.append(sector)
+
+    sector_config = new_sectors
 
     canvas_size = (frame.shape[1], frame.shape[0])
     detector = DartDetector()
