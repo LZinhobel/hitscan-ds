@@ -86,7 +86,7 @@ def handle_ring_keys(key, ring):
     elif key == ord('n'):
         if current_ring == 0 and not auto_generated and not rings_loaded:
             base = rings[0].copy()
-            scale_factors = [1.0, 0.85, 0.6, 0.55, 0.15, 0.06]
+            scale_factors = [1.0, 0.85, 0.6, 0.5, 0.15, 0.06]
             for i in range(1, NUM_RINGS):
                 rings[i] = np.array([base[0], base[1], base[2] * scale_factors[i], base[3], base[4]], dtype=np.float32)
             print("Inner rings auto-generated.")
@@ -94,6 +94,8 @@ def handle_ring_keys(key, ring):
 
         current_ring += 1
         if current_ring >= NUM_RINGS:
+            for ring in rings:
+                ring[1] -= 65
             save_rings(rings)
             print("All rings placed and saved.\nNow editing field lines.")
             current_ring = NUM_RINGS - 1
