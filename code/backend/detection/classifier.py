@@ -13,9 +13,7 @@ for ring in ring_data:
 
 new_sectors = []
 for sector in sector_config:
-    # Only process tuples or lists with enough coordinates
     if isinstance(sector, (tuple, list)) and len(sector) >= 4:
-        # Some may include stretch_x and stretch_y, some not
         if len(sector) == 6:
             x1, y1, x2, y2, sx, sy = sector
             new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET, sx, sy))
@@ -23,10 +21,8 @@ for sector in sector_config:
             x1, y1, x2, y2 = sector
             new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET))
         else:
-            # Unexpected but valid format → copy unchanged
             new_sectors.append(sector)
     else:
-        # Not a tuple/list → leave as-is
         new_sectors.append(sector)
 
 sector_config = new_sectors
@@ -61,7 +57,7 @@ def classify_sector(x, y):
 
     dart_angle = (math.degrees(math.atan2(dy, dx)) + 360) % 360
 
-    offset = (sector_config[0] - 100) % 360
+    offset = (sector_config[0] - 108) % 360
     adjusted_angle = (dart_angle - offset + 360) % 360
 
     sector_angle_size = 360 / NUM_SECTORS
