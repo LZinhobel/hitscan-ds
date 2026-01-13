@@ -10,7 +10,7 @@ LINES_SAVE_PATH = os.path.join(BASE_DIR, "sectors.json")
 NUM_RINGS = 6
 
 def save_rings(rings):
-    print(rings);
+    print(rings)
     json_rings = [
         {
             "cx": float(r[0]),
