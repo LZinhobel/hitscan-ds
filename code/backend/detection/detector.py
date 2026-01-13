@@ -8,7 +8,7 @@ groups = []
 def _estimate_tip(contour, frame_debug=None):
     hull = cv2.convexHull(contour)
     if len(hull) < 3:
-        return None
+        return None, None
 
     pts = hull.reshape(-1, 2)
     centroid = np.mean(pts, axis=0)
@@ -16,7 +16,7 @@ def _estimate_tip(contour, frame_debug=None):
     max_dist = 60
     filtered_pts = np.array([p for p in pts if np.linalg.norm(p - centroid) < max_dist])
     if len(filtered_pts) < 3:
-        return None
+        return None, None
 
     max_area = 0
     triangle = None
@@ -31,7 +31,7 @@ def _estimate_tip(contour, frame_debug=None):
                     triangle = [filtered_pts[i], filtered_pts[j], filtered_pts[k]]
 
     if triangle is None:
-        return None
+        return None, None
 
     a, b, c = triangle
     dists = [
@@ -50,7 +50,7 @@ def _estimate_tip(contour, frame_debug=None):
         cv2.circle(debug_img, tip, distance_threshold, (255, 255, 255), 1)
         cv2.imwrite("last_detected_dart.png", debug_img)
 
-    return tip
+    return tip, centroid
 
 class DartDetector:
     def __init__(self, still_time=0.4, motion_thresh=30, min_blob_area=50):
@@ -71,6 +71,19 @@ class DartDetector:
         self.debug_tip = None
         self.debug_merged = None
 
+    def _apply_filter_pipeline(self, diff):
+        blur = cv2.GaussianBlur(diff, (5, 5), 0)
+
+        for i in range(10):
+            blur = cv2.GaussianBlur(blur, (9, 9), 1)
+
+        blur = cv2.bilateralFilter(blur, 9, 75, 75)
+
+        gray = blur
+
+        _, thresh = cv2.threshold(gray, self.motion_thresh, 255, 0)
+        return thresh
+
     def update(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (9, 9), 0)
@@ -80,7 +93,9 @@ class DartDetector:
             return [], None, [], 0
 
         diff = cv2.absdiff(self.bg_frame, blurred)
-        _, thresh = cv2.threshold(diff, self.motion_thresh, 255, cv2.THRESH_BINARY)
+
+        thresh = self._apply_filter_pipeline(diff)
+
         thresh = cv2.dilate(thresh, None, iterations=2)
         thresh = cv2.erode(thresh, None, iterations=1)
 
@@ -149,12 +164,17 @@ class DartDetector:
             if groups:
                 largest_group = groups[0]
                 merged_contour = np.vstack(largest_group)
-                tip = _estimate_tip(merged_contour, frame_debug=thresh)
-                if tip is not None and self._is_new_dart(tip):
-                    self.known_darts.append(tip)
-                    new_darts.append(tip)
-                    self.ready_to_analyze = False
-                    self.motion_history.clear()
+                tip, centroid = _estimate_tip(merged_contour, frame_debug=thresh)
+                if tip is not None and centroid is not None:
+
+                    if tip[0] >= centroid[0]:
+                        return [], thresh, contour_boxes, motion_level
+
+                    if self._is_new_dart(tip):
+                        self.known_darts.append(tip)
+                        new_darts.append(tip)
+                        self.ready_to_analyze = False
+                        self.motion_history.clear()
 
             self.bg_frame = blurred.copy()
             self.ready_to_analyze = False
