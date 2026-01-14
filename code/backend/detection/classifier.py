@@ -1,7 +1,8 @@
 import math
+
 from file_handler import load_rings, load_lines
 
-Y_OFFSET = -65
+Y_OFFSET = 0
 
 ring_data, _ = load_rings()
 print(ring_data)
@@ -28,10 +29,11 @@ for sector in sector_config:
 sector_config = new_sectors
 
 NUM_SECTORS = 20
-DARTBOARD_NUMBERS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17,
-                     3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
+DARTBOARD_NUMBERS = [10, 15, 2, 17, 3, 19, 7, 16, 8, 11,
+                     14, 9, 12, 5, 20, 1, 18, 4, 13, 6]
 
 NUM_RINGS = len(ring_data)
+
 
 def classify_ring(x, y):
     for i in range(NUM_RINGS - 1):
@@ -43,6 +45,7 @@ def classify_ring(x, y):
         return [NUM_RINGS - 1]
     return [0]
 
+
 def point_in_ellipse(x, y, ring):
     dx = x - ring[0]
     dy = y - ring[1]
@@ -50,19 +53,26 @@ def point_in_ellipse(x, y, ring):
     ny = dy / (ring[2] * ring[4])
     return nx ** 2 + ny ** 2 <= 1
 
+
 def classify_sector(x, y):
+    rotation_deg, offset_x, offset_y, scale, stretch_x, stretch_y = sector_config
+
     cx, cy = ring_data[0][0], ring_data[0][1]
-    dx = x - cx
-    dy = y - cy
+    ring_sx = ring_data[0][3]
+    ring_sy = ring_data[0][4]
 
-    dart_angle = (math.degrees(math.atan2(dy, dx)) + 360) % 360
+    dx = x - (cx + offset_x)
+    dy = y - (cy + offset_y)
 
-    offset = (sector_config[0] - 108) % 360
-    adjusted_angle = (dart_angle - offset + 360) % 360
+    dx /= (ring_sx * scale * stretch_x)
+    dy /= (ring_sy * scale * stretch_y)
 
-    sector_angle_size = 360 / NUM_SECTORS
+    raw_angle = math.degrees(math.atan2(dy, dx)) % 360
 
-    sector_index = int(adjusted_angle // sector_angle_size)
+    adjusted_angle = (raw_angle - rotation_deg + 360) % 360
+
+    sector_size = 360 / NUM_SECTORS
+    sector_index = int(adjusted_angle // sector_size)
 
     return sector_index
 

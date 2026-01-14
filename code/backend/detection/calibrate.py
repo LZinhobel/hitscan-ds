@@ -94,8 +94,6 @@ def handle_ring_keys(key, ring):
 
         current_ring += 1
         if current_ring >= NUM_RINGS:
-            for ring in rings:
-                ring[1] -= 65
             save_rings(rings)
             print("All rings placed and saved.\nNow editing field lines.")
             current_ring = NUM_RINGS - 1
