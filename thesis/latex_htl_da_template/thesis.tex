@@ -66,36 +66,46 @@
 \pagestyle{scrheadings}
 
 \begin{spacing}{1}
-\chapter{Einleitung}\label{chapter:introduction}
+\chapter{Introduction}\label{chapter:introduction}
 \end{spacing}
 \input{./sections/introduction}
 
 \begin{spacing}{1}
-\chapter{Umfeldanalyse}
+\chapter{Related Work and Market Analysis}
 \end{spacing}
 \input{./sections/related_work}
 
 \begin{spacing}{1}
-\chapter{Technologien}\label{chapter:tech}
+\chapter{Foundations}
+\end{spacing}
+\input{./sections/foundations}
+
+\begin{spacing}{1}
+\chapter{Technologies}\label{chapter:tech}
 \end{spacing}
 \input{./sections/technologies}
 
 \begin{spacing}{1}
-\chapter{Umsetzung}\label{chapter:implementation}
+\chapter{Implementation}\label{chapter:implementation}
 \end{spacing}
 \input{./sections/implementation}
 
 \begin{spacing}{1}
-\chapter{Zusammenfassung}
+\chapter{Evaluation and Testing}
+\end{spacing}
+\input{./sections/evaluation}
+
+\begin{spacing}{1}
+\chapter{Summary}
 \end{spacing}
 \input{./sections/summary}
 
-\newpage
 \pagenumbering{Roman}
 \setcounter{page}{\value{RPages}}
+
 \input{glossary}
-%\setlength{\glsdescwidth}{0.8\linewidth}
 \glsnogroupskiptrue
+
 \IfStrEq{\thesislang}{de}
 {
 	\printglossary[title=Glossar,toctitle=Glossar] %,style=long]
@@ -103,21 +113,38 @@
 {
 	\printglossary[title=Glossary,toctitle=Glossary] %,style=long]
 }
+
 \spacing{1}{
+\newpage
+
 \IfStrEq{\thesislang}{de}
 {
+	\addchap{Literaturverzeichnis}
 	\bibliographystyle{ieeetrande}
 }
 {
+	\addchap{References}
 	\bibliographystyle{IEEEtran}
 }
+
 \bibliography{bib}
 }
+
+\newpage
 \listoffigures
 \listoftables
 \lstlistoflistings
-\appendix
-\addchap{Anhang}
-\input{./sections/appendix}
-\end{document}
 
+\appendix
+
+\IfStrEq{\thesislang}{de}
+{
+	\addchap{Anhang}
+}
+{
+	\addchap{Appendix}
+}
+
+\input{./sections/appendix}
+
+\end{document}
