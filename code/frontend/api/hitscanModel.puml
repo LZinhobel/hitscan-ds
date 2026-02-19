@@ -1,0 +1,37 @@
+@startuml name hitscanModel
+hide circle
+left to right direction
+
+
+entity "Player" as player{
+    * <<PK>> id: int
+    --
+    name: string
+}
+
+entity "Game" as game{
+    * <<PK>> id: int
+    * <<FK>> player1: int
+    * <<FK>> player2: int
+    * <<FK>> winner: int
+    --
+    date: Date
+    player1Score: int
+    player2Score: int
+}
+
+entity "Score" as score{
+    * <<PK>> id: int
+    * <<FK>> game: int
+    * <<FK>> player: int
+    --
+    score: int
+}
+
+player ||--o{ game
+
+player ||--o{ score
+
+game ||--o{ score
+
+@enduml
