@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import time
 
-distance_threshold = 70
 groups = []
 
 def _estimate_tip(contour, frame_debug=None):
@@ -47,13 +46,12 @@ def _estimate_tip(contour, frame_debug=None):
         triangle_pts = [tuple(p.astype(int)) for p in triangle]
         cv2.polylines(debug_img, [np.array(triangle_pts)], isClosed=True, color=(0, 255, 255), thickness=1)
         cv2.circle(debug_img, tip, 6, (0, 0, 255), -1)
-        cv2.circle(debug_img, tip, distance_threshold, (255, 255, 255), 1)
         cv2.imwrite("last_detected_dart.png", debug_img)
 
     return tip, centroid
 
 class DartDetector:
-    def __init__(self, still_time=0.4, motion_thresh=30, min_blob_area=50, debug=False):
+    def __init__(self, still_time=0.4, motion_thresh=18, min_blob_area=50, debug=False):
         self.bg_frame = None
         self.last_movement = time.time()
         self.still_time = still_time
@@ -86,6 +84,43 @@ class DartDetector:
         _, thresh = cv2.threshold(gray, self.motion_thresh, 255, 0)
         return thresh
 
+    def create_filter_images(self, diff):
+        if self.debug:
+            self._debug_save("10_diff_input", diff)
+
+        blur = cv2.GaussianBlur(diff, (5, 5), 0)
+        if self.debug:
+            self._debug_save("11_blur_1", blur)
+
+        # for i in range(10):
+        #     blur = cv2.GaussianBlur(blur, (9, 9), 1)
+        #     if self.debug:
+        #         self._debug_save(f"12_blur_iter_{i:02d}", blur)
+
+        blur = cv2.bilateralFilter(blur, 9, 75, 75)
+        if self.debug:
+            self._debug_save("13_bilateral", blur)
+
+        gray = blur
+        if self.debug:
+            self._debug_save("14_gray_pre_thresh", gray)
+
+        _, thresh = cv2.threshold(gray, self.motion_thresh, 255, 0)
+        if self.debug:
+            self._debug_save("15_thresh_raw", thresh)
+
+    def _connect_dart_parts(self, thresh):
+        kernel_long = cv2.getStructuringElement(cv2.MORPH_RECT, (35, 5))
+        connected = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_long)
+
+        kernel_small = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+        connected = cv2.morphologyEx(connected, cv2.MORPH_CLOSE, kernel_small)
+
+        if self.debug:
+            self._debug_save("18_connected", connected)
+
+        return connected
+
     def update(self, frame):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (9, 9), 0)
@@ -96,9 +131,15 @@ class DartDetector:
 
         diff = cv2.absdiff(self.bg_frame, blurred)
 
+        # diff_vis = cv2.normalize(diff, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        # self._debug_save("02b_diff_amplified", diff_vis)
+
         thresh = self._apply_filter_pipeline(diff)
+
         thresh = cv2.dilate(thresh, None, iterations=2)
         thresh = cv2.erode(thresh, None, iterations=1)
+
+        thresh = self._connect_dart_parts(thresh)
 
         mask = np.ones_like(thresh) * 255
         for (x, y) in self.known_darts:
@@ -131,45 +172,21 @@ class DartDetector:
             self._debug_save("02_diff_global", diff)
             self._debug_save("03_thresh_global", thresh)
 
-            groups.clear()
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            filtered = [c for c in contours if cv2.contourArea(c) >= self.min_blob_area]
+            contours = [c for c in contours if cv2.contourArea(c) >= self.min_blob_area]
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-            def contour_distance(c1, c2):
-                min_dist = np.inf
-                for p1 in c1:
-                    for p2 in c2:
-                        d = np.linalg.norm(p1[0] - p2[0])
-                        if d < min_dist:
-                            min_dist = d
-                return min_dist
+            if self.debug:
+                dbg = frame.copy()
+                for c in contours[:3]:
+                    cv2.drawContours(dbg, [c], -1, (0, 255, 0), 2)
+                self._debug_save("04_largest_contours", dbg)
 
-            used = set()
-
-            for i, c1 in enumerate(filtered):
-                if i in used:
-                    continue
-                group = [c1]
-                used.add(i)
-                queue = [i]
-                while queue:
-                    idx = queue.pop()
-                    for j, c2 in enumerate(filtered):
-                        if j in used:
-                            continue
-                        dist = contour_distance(filtered[idx], c2)
-                        if dist < distance_threshold:
-                            group.append(c2)
-                            used.add(j)
-                            queue.append(j)
-                groups.append(group)
-
-            groups.sort(key=lambda g: cv2.contourArea(np.vstack(g)), reverse=True)
-            if groups:
-                largest_group = groups[0]
-                merged_contour = np.vstack(largest_group)
+            if contours:
+                merged_contour = contours[0]
                 tip, centroid = _estimate_tip(merged_contour, frame_debug=thresh)
+
                 if tip is not None and centroid is not None:
 
                     if tip[0] >= centroid[0]:
@@ -179,8 +196,17 @@ class DartDetector:
                         self.known_darts.append(tip)
                         new_darts.append(tip)
                         self.ready_to_analyze = False
+
                         debug_final = frame.copy()
-                        self._debug_save("04_final_tip", debug_final)
+                        cv2.circle(debug_final, tip, 8, (0, 0, 255), -1)
+                        cv2.circle(debug_final, tip, 22, (0, 255, 255), 2)
+                        cv2.putText(debug_final, "DART", (tip[0] + 10, tip[1] - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+                        self._debug_save("05_final_tip", debug_final)
+
+                        self.create_filter_images(diff)
+
                         self.debug_frame_id += 1
                         self.motion_history.clear()
 
