@@ -6,6 +6,15 @@ TODO: ADD CONTENT HERE
 
 
 \section{Data Model and Persistence}
+Due to previously outlined specifications the system's database is designed to run on the user's local machine. This design choice allows us to forego the complexities of a social media like user system with profiles and authentication. 
+In turn the model stays incredibly simple with only 3 Entities: Game, Player and Score. The Player entity is only used to store the player's name and a unique identifier. 
+The Game entity stores the players involved and the current state of the game. The Score entity is used to connect everything together by storing the points scored in each turn and the player who scored them. 
+These scores are then evaluated on the statistics page, grouped by player.
+\begin{figure}[h t]
+    \centering
+    \includegraphics[scale=0.5]{pics/dataModel.png}
+    \caption{PlantUML diagram of the data model}
+\end{figure}
 \subsection{Game Rule Modeling}
 
 \subsubsection{Ruleset Selection}
