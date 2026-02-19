@@ -53,7 +53,7 @@ def _estimate_tip(contour, frame_debug=None):
     return tip, centroid
 
 class DartDetector:
-    def __init__(self, still_time=0.4, motion_thresh=30, min_blob_area=50):
+    def __init__(self, still_time=0.4, motion_thresh=30, min_blob_area=50, debug=False):
         self.bg_frame = None
         self.last_movement = time.time()
         self.still_time = still_time
@@ -70,6 +70,8 @@ class DartDetector:
 
         self.debug_tip = None
         self.debug_merged = None
+        self.debug = debug
+        self.debug_frame_id = 0
 
     def _apply_filter_pipeline(self, diff):
         blur = cv2.GaussianBlur(diff, (5, 5), 0)
@@ -95,7 +97,6 @@ class DartDetector:
         diff = cv2.absdiff(self.bg_frame, blurred)
 
         thresh = self._apply_filter_pipeline(diff)
-
         thresh = cv2.dilate(thresh, None, iterations=2)
         thresh = cv2.erode(thresh, None, iterations=1)
 
@@ -126,6 +127,10 @@ class DartDetector:
             return [], thresh, contour_boxes, motion_level
 
         if self.ready_to_analyze and (now - self.last_movement > self.still_time):
+            self._debug_save("01_input", frame)
+            self._debug_save("02_diff_global", diff)
+            self._debug_save("03_thresh_global", thresh)
+
             groups.clear()
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -174,6 +179,9 @@ class DartDetector:
                         self.known_darts.append(tip)
                         new_darts.append(tip)
                         self.ready_to_analyze = False
+                        debug_final = frame.copy()
+                        self._debug_save("04_final_tip", debug_final)
+                        self.debug_frame_id += 1
                         self.motion_history.clear()
 
             self.bg_frame = blurred.copy()
@@ -189,3 +197,9 @@ class DartDetector:
 
     def get_groups(self):
         return groups
+
+    def _debug_save(self, name, img):
+        if not self.debug:
+            return
+        filename = f"debug/{self.debug_frame_id:05d}_{name}.png"
+        cv2.imwrite(filename, img)

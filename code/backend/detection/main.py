@@ -1,15 +1,21 @@
+import os
+from threading import Thread
 from time import sleep
+
+import cv2
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
-import cv2, os, numpy as np
-from threading import Thread
-from file_handler import load_rings, load_lines, save_rings, save_lines
+
 from classifier import classify_ring, classify_sector, classify_field
 from detector import DartDetector
 from draw_canvas import draw_ellipses, draw_sector_lines
+from file_handler import load_rings, load_lines, save_rings, save_lines
 
-ring_data, rings_loaded = load_rings()
+hover_pos = None
+
+ring_data = load_rings()
 sector_config = load_lines()
 NUM_RINGS = len(ring_data)
 
@@ -22,6 +28,13 @@ stop_camera_flag = False
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+
+
+def hover_callback(event, x, y, flags, param):
+    global hover_pos
+    if event == cv2.EVENT_MOUSEMOVE:
+        hover_pos = (x, y)
+
 
 def select_camera(max_cams=5):
     caps = []
@@ -51,6 +64,7 @@ def select_camera(max_cams=5):
         cap.release()
         cv2.destroyWindow(f"Camera {i}")
     return cam_idx
+
 
 def mouse_callback(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -91,6 +105,7 @@ def draw_virtual_canvas():
 def index():
     return "Dart detection backend running"
 
+
 @app.post("/calibrate")
 def calibrate():
     try:
@@ -129,6 +144,7 @@ def calibrate():
     except Exception as e:
         print("[POST] save error:", e)
         return jsonify({"type": "error", "msg": f"Failed to save calibration: {e}"}), 500
+
 
 @app.get("/close_camera")
 def close_camera():
@@ -183,8 +199,10 @@ def get_last_calibration():
         })
     except Exception as e:
         return jsonify({"error": f"Failed to load calibration {e}"}), 500
+
+
 def main():
-    Y_OFFSET = -65
+    Y_OFFSET = 0
     global canvas_size, current_cap, camera_active, stop_camera_flag
 
     stop_camera_flag = False
@@ -202,7 +220,6 @@ def main():
         camera_active = False
         return
 
-
     global ring_data, sector_config
     ring_data, _ = load_rings()
     print(ring_data)
@@ -214,9 +231,7 @@ def main():
 
     new_sectors = []
     for sector in sector_config:
-        # Only process tuples or lists with enough coordinates
         if isinstance(sector, (tuple, list)) and len(sector) >= 4:
-            # Some may include stretch_x and stretch_y, some not
             if len(sector) == 6:
                 x1, y1, x2, y2, sx, sy = sector
                 new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET, sx, sy))
@@ -224,45 +239,64 @@ def main():
                 x1, y1, x2, y2 = sector
                 new_sectors.append((x1, y1 - Y_OFFSET, x2, y2 - Y_OFFSET))
             else:
-                # Unexpected but valid format → copy unchanged
                 new_sectors.append(sector)
         else:
-            # Not a tuple/list → leave as-is
             new_sectors.append(sector)
 
     sector_config = new_sectors
 
     canvas_size = (frame.shape[1], frame.shape[0])
-    detector = DartDetector()
+    detector = DartDetector(debug=True)
     print("Press 'q' to quit. Throw darts and watch for results...")
 
     cv2.namedWindow("Dartboard View")
-    cv2.setMouseCallback("Dartboard View", mouse_callback)
+    cv2.setMouseCallback("Dartboard View", hover_callback)
     cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
                        lambda val: setattr(detector, "motion_thresh", val))
 
     while not stop_camera_flag:
-        ret, frame = cap.read()
+        ret, raw_frame = cap.read()
         if not ret:
             break
 
+        proc_frame = raw_frame.copy()
+        vis_frame = raw_frame.copy()
+
         virtual_canvas = draw_virtual_canvas()
-        overlay = frame.copy()
         mask = virtual_canvas[:, :, 1] > 0
-        overlay[mask] = virtual_canvas[mask]
-        frame = overlay
+        vis_frame[mask] = virtual_canvas[mask]
 
-        new_darts, thresh_img, boxes, motion_level = detector.update(frame)
+        if hover_pos is not None:
+            hx, hy = hover_pos
 
-        cv2.putText(frame, f"Motion Level: {motion_level:.0f}", (10, 30),
+            if 0 <= hx < frame.shape[1] and 0 <= hy < frame.shape[0]:
+                ring_ids = classify_ring(hx, hy)
+                sector_id = classify_sector(hx, hy)
+                field = classify_field(ring_ids, sector_id)
+
+                print(f"[Hover] ({hx}, {hy}) -> {field}")
+
+                cv2.putText(
+                    frame,
+                    f"Hover Score: {field}",
+                    (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2
+                )
+
+        new_darts, thresh_img, boxes, motion_level = detector.update(proc_frame)
+
+        cv2.putText(vis_frame, f"Motion Level: {motion_level:.0f}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
         for (x, y, w, h) in boxes:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            cv2.putText(frame, "Blob", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            cv2.rectangle(vis_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(vis_frame, "Blob", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
         for (x, y) in clicked_points:
-            cv2.circle(frame, (x, y), 6, (255, 0, 255), -1)
+            cv2.circle(vis_frame, (x, y), 3, (255, 0, 255), -1)
 
         for (x, y) in new_darts:
             ring_ids = classify_ring(int(x), int(y))
@@ -273,12 +307,12 @@ def main():
             print(f"[Auto] Sent: {data}")
 
         for (x, y) in detector.known_darts:
-            cv2.circle(frame, (int(x), int(y)), 6, (255, 0, 0), -1)
+            cv2.circle(vis_frame, (int(x), int(y)), 3, (255, 0, 0), -1)
 
-        thresh_display = cv2.cvtColor(thresh_img, cv2.COLOR_GRAY2BGR) if thresh_img is not None else np.zeros_like(frame)
-        thresh_display = cv2.resize(thresh_display, (frame.shape[1], frame.shape[0]))
+        thresh_display = cv2.cvtColor(thresh_img, cv2.COLOR_GRAY2BGR) if thresh_img is not None else np.zeros_like(vis_frame)
+        thresh_display = cv2.resize(thresh_display, (vis_frame.shape[1], vis_frame.shape[0]))
 
-        debug_merged = frame.copy()
+        debug_merged = vis_frame.copy()
         for group in detector.get_groups():
             cv2.drawContours(debug_merged, group, -1, (0, 255, 255), 2)
 
@@ -297,7 +331,7 @@ def main():
         debug_tip = cv2.resize(debug_tip, (debug_merged.shape[1],
                                            debug_merged.shape[0])) if debug_tip is not None else np.zeros_like(
             debug_merged)
-        top_row = np.hstack((frame, thresh_display))
+        top_row = np.hstack((vis_frame, thresh_display))
         bottom_row = np.hstack((debug_tip, debug_merged))
 
         combined_view = np.vstack((top_row, bottom_row))
@@ -321,4 +355,6 @@ def main():
 
 
 if __name__ == "__main__":
+    os.makedirs("debug", exist_ok=True)
+    Thread(target=main, daemon=True).start()
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
