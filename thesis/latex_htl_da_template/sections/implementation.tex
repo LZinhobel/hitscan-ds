@@ -16,9 +16,24 @@ These scores are then evaluated on the statistics page, grouped by player.
     \caption{PlantUML diagram of the data model}
 \end{figure}
 \subsection{Game Rule Modeling}
+Luckily the difference in competetive dart rulesets is minimal and only affects the maximum amount of score a player is given. Therefore we don't have to adapt the game entity to accomidate different rulesets and can instead just limit the score field to either accepting 301 or 501.
+\begin{lstlisting}[numbers=left,caption=Game creation endpoint limiting score based on ruleset, label=lst:game_creation]
+@router.post("/", response_model=GameDto)
+async def create_game(payload: GameCreate):
+    base = 301 \
+        if payload.version == "301" else 501
+
+    new_game = await Game.create(
+        date=datetime.now(),
+        player1_id=payload.player1,
+        player2_id=payload.player2,
+        player1Score=base,
+        player2Score=base,
+    )
+\end{lstlisting}
 
 \subsubsection{Ruleset Selection}
-TODO: ADD CONTENT HERE
+We decided to implement the two most common rulesets, 301 and 501. Other more casual rulesets like "Around the Clock" are usually very simple and don't require advanced counting systems to enjoy.
 
 
 \subsection{Database Schema Design}
@@ -28,10 +43,12 @@ TODO: ADD CONTENT HERE
 
 
 \section{Scoring and Game Logic}
-\subsection{Logic Responsibility Distribution}
+The general flow of dart scoring is as follows: Players alternate in throwing 3 darts while the system constantly subtracts the thrown score from the current total. If the resulting score is exactly zero, the player wins. If it goes below zero, it's considered a bust, and the player's score resets to what it was at the start of their turn. Additionally rulesets have variants like "double in" or "double out" which require the player to start or end on a double field respectively.
+\subsubsection{Logic Responsibility Distribution}
+For the sake of statistical analysis and a more responsive UI, we decided to implement most of the game logic on the frontend. Even when the score busts, the shot should still be counted for stats and therefore should still be persisted. 
+Implementing this logic would be too convluted on the backend, involving rollbacks and unecassary transactions, and is instead handled by the frontend.
+Another reason why the frontend handles most of the logic is that the detection backend is seperated from the database backend. The frontend reacts on sockets from the detection backend and can then handle logic faster than if it were to run over the network to the database backend and back.
 
-\subsubsection{Frontend vs Backend Logic}
-TODO: ADD CONTENT HERE
 
 
 \subsection{Score Calculation}
