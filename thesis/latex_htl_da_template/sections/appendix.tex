@@ -1,16 +1,43 @@
+
 \chapter{Project Management}
 
 \section{Project Timeline}
 \subsection{Milestones}
 
 \subsubsection{Development Phases}
-TODO: ADD CONTENT HERE
+The project is structured into several key phases, each culminating in a defined milestone. This structured approach ensures a logical progression from foundational research to a fully functional prototype.
 
+\begin{itemize}
+    \item \textbf{Design Prototype Completed (09.07.2025):} This milestone marks the finalization of the web interface design. The design prototype includes wireframes and mockups for all major screens (scoreboard, statistics, game setup) and is validated through user feedback sessions to ensure it meets usability standards.
+    \item \textbf{Image Capture Prototype Created (11.07.2025):} A functional prototype for the vision subsystem is established. This includes setting up the camera with the chosen hardware, capturing images from the designated perspective, and implementing basic image acquisition routines to test lighting conditions and image quality.
+    \item \textbf{Initial Game Logic Implementation Completed (16.07.2025):} The core game rules for the primary modes (e.g., 501, Double Out) are implemented in the backend. This milestone ensures that the score calculation, player turn management, and win conditions function correctly, independent of the vision system.
+    \item \textbf{Game Persistence Implemented (21.07.2025):} A database or file-based storage system is integrated to save game history, player profiles, and match data. This lays the groundwork for the statistical analysis features.
+    \item \textbf{Throw Detection Completed (01.08.2025):} This is a critical technical milestone where the vision subsystem is successfully integrated with the game logic. The system must reliably detect a new dart on the board and correctly identify its score segment with an acceptable accuracy.
+    \item \textbf{Statistical Evaluations Completed (04.08.2025):} The final feature milestone. The system can now generate and display meaningful statistics based on stored game data, such as per-dart averages, checkout percentages, and scoring heatmaps, completing the full feature set for the prototype.
+\end{itemize}
 
 \section{Task Distribution}
 \subsection{Individual Contributions}
 
-TODO: ADD CONTENT HERE
+This thesis is a collaborative project with a clear division of labor, leveraging the individual strengths of both authors. The work is split into two primary domains: the vision and hardware system, and the web application and user experience.
+
+\subsubsection{Luca Zinhobel: Vision and Hardware System}
+Luca is responsible for the entire "backend" of the physical detection system. His tasks are centered on the core computer vision problem and ensuring the hardware is adequate for the task. His specific contributions include:
+\begin{itemize}
+    \item \textbf{Hardware Selection and Setup:} Researching and selecting the optimal camera model and establishing the hardware configuration and camera perspective for reliable image capture.
+    \item \textbf{Vision Algorithm Development:} Researching, implementing, and refining the image processing techniques required for motion-based dart detection and score mapping.
+    \item \textbf{System Calibration:} Developing the manual and marker-based calibration procedures to accurately map image coordinates to dartboard segments.
+    \item \textbf{Integration:} Ensuring the vision module outputs detection events in a format that can be consumed by the main application logic.
+\end{itemize}
+
+\subsubsection{Marvin Anderson: Web Application and User Experience}
+Marvin is responsible for the entire user-facing side of the system. His tasks focus on creating an intuitive, informative, and responsive web application that serves as the game's control panel and scoreboard. His specific contributions include:
+\begin{itemize}
+    \item \textbf{Web Interface Development:} Designing and implementing a user-friendly, responsive web-based interface that is accessible on various devices (smartphones, tablets, PCs).
+    \item \textbf{Real-Time Display:} Implementing technologies (such as WebSockets) to push score updates from the detection system to the web interface in real-time, ensuring all connected devices display the current game state instantly.
+    \item \textbf{Game Logic and State Management:} Implementing the core logic for various game modes (301, 501, Double Out) and managing the overall application state (players, turns, scores).
+    \item \textbf{Statistics and Persistence:} Designing and implementing the database schema and logic to store game data, as well as developing the frontend components to display meaningful player statistics derived from this data.
+\end{itemize}
 
 
 \chapter{Additional Materials}

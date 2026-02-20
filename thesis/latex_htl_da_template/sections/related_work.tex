@@ -1,48 +1,109 @@
-
 \section{Commercial Dart Scoring Systems}
+
 \subsection{High-End Multi-Camera Systems}
 
 \subsubsection{Technical Capabilities}
-TODO: ADD CONTENT HERE
+
+Professional automatic scoring solutions used in televised tournaments rely on multi-camera triangulation systems. 
+These systems typically operate with at least three synchronized high-speed cameras positioned around the board.
+
+Comparable approaches are commonly used in sports tracking research where fast projectiles must be reconstructed in 3D space \cite{Osadchy2006}.
+The cameras operate at high frame rates to minimize motion blur and allow precise localization of small objects with high velocity.
+
+To achieve robustness against occlusion, model-based tracking combined with Kalman filtering is applied to estimate the dart trajectory even when the projectile is temporarily invisible \cite{Welch}. 
+Sub-pixel localization techniques and geometric board models are then used to classify the hit region.
 
 \subsubsection{Cost and Setup Requirements}
-TODO: ADD CONTENT HERE
+
+Such systems require calibrated camera arrays and rigid mounting geometry. 
+Precise extrinsic calibration is mandatory because triangulation error increases quadratically with baseline misalignment \cite{Hartley2004}. 
+Installation therefore requires mechanical fixtures, controlled lighting and dedicated computing hardware.
+
+Consequently, these solutions are expensive and unsuitable for private environments. 
+The hardware requirements and calibration complexity motivate the investigation of single-camera alternatives.
 
 
 \subsection{Laser and Sensor-Based Systems}
 
 \subsubsection{Hardware Dependencies}
-TODO: ADD CONTENT HERE
+
+Alternative commercial products use laser curtains or vibration sensors attached to the dartboard. 
+The dart position is estimated either by beam interruption timing or by analyzing vibration propagation across the board surface.
+
+Comparable sensing principles are used in impact localization research where multiple sensors estimate impact location using time-of-arrival differences \cite{Schwingshackl2010}. 
+However, such approaches require specialized hardware integrated into the board.
 
 \subsubsection{Accuracy Characteristics}
-TODO: ADD CONTENT HERE
 
+While sensor systems work reliably for steel darts, they suffer from material dependency and mechanical damping effects. 
+Impact wave propagation varies depending on board wear and mounting conditions, causing systematic localization error \cite{Schwingshackl2010}. 
+Furthermore, these methods cannot detect bounce-outs or mid-air collisions and provide no visual verification.
+
+---
 
 \section{Research on Sports Object Tracking}
+
 \subsection{Ball and Projectile Tracking}
 
 \subsubsection{Motion Segmentation Techniques}
-TODO: ADD CONTENT HERE
+
+Motion segmentation is commonly used to isolate moving objects in video streams. 
+Background subtraction methods such as adaptive Gaussian mixture models separate foreground motion from static scenes \cite{Zivkovic2004}. 
+These techniques are widely applied in sports tracking to detect fast moving balls or projectiles.
+
+Edge detection and contour extraction further refine object localization by identifying high-contrast boundaries \cite{Canny1986}. 
+For circular objects, Hough transform based detection is frequently used \cite{Duda1972}. 
+These techniques form a computationally efficient alternative to deep learning approaches when the environment is controlled.
 
 \subsubsection{Trajectory Estimation Methods}
-TODO: ADD CONTENT HERE
 
+Once detected, object motion is typically modeled using recursive state estimation. 
+Kalman filtering predicts the projectile path and compensates for measurement noise \cite{Welch}. 
+In sports applications this enables recovery of temporarily occluded objects and estimation of impact position \cite{Osadchy2006}.
+
+The combination of motion detection and trajectory prediction is particularly effective for high-contrast fast moving objects where training data for neural networks is limited.
+
+---
 
 \section{Existing Open Source Projects}
+
 \subsection{Dartboard Detection Tools}
 
 \subsubsection{Marker-Based Alignment}
-TODO: ADD CONTENT HERE
+
+Several research prototypes rely on fiducial markers for camera calibration. 
+ArUco markers allow reliable pose estimation even under partial occlusion. 
+By detecting multiple markers attached to the board, a homography between image and board coordinates can be computed.
+
+This allows transforming detected impact points into standardized dartboard coordinates independent of camera perspective.
 
 \subsubsection{Geometric Modeling Approaches}
-TODO: ADD CONTENT HERE
 
+After calibration, most systems apply a geometric dartboard model consisting of concentric rings and radial sectors. 
+The hit location is classified by computing the nearest ring boundaries and angular sector. 
+Such geometric classification avoids machine learning and instead relies on deterministic mapping from pixel coordinates to board regions.
+
+This approach is computationally efficient and well suited for real-time applications on consumer hardware.
+
+---
 
 \section{Position of This Work in Current Literature}
+
 \subsection{Comparison with Existing Approaches}
 
 \subsubsection{Hardware Differences}
-TODO: ADD CONTENT HERE
+
+Existing systems either depend on expensive multi-camera setups or dedicated sensor hardware. 
+The presented work instead uses a single consumer camera and passive board markers. 
+Compared to stereo systems \cite{Hartley2004}, no multi-view calibration is required, reducing installation effort.
+
+Compared to vibration-based systems \cite{Schwingshackl2010}, the method remains independent of board material and mounting conditions.
 
 \subsubsection{Novelty of a Motion-Threshold Pipeline}
-TODO: ADD CONTENT HERE
+
+The proposed pipeline combines motion segmentation, temporal thresholding and geometric board modeling. 
+Unlike neural network approaches, the system does not require training data. 
+Instead it relies on classical computer vision techniques including background subtraction \cite{Zivkovic2004}.
+
+This positions the work between hardware-heavy commercial solutions and data-hungry AI methods. 
+The contribution lies in demonstrating that reliable dart detection can be achieved using a deterministic single-camera pipeline suitable for private use environments.

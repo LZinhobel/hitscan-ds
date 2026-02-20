@@ -1,56 +1,102 @@
-
 \section{Camera Models and Projective Geometry}
+
 \subsection{Perspective Projection}
 
 \subsubsection{Pinhole Camera Model}
-TODO: ADD CONTENT HERE
+
+A camera image represents a three-dimensional scene projected onto a two-dimensional plane. 
+This relationship can be described using the pinhole camera model, where each point in the real world is mapped along a straight line through the camera center onto the image sensor \cite{Hartley2004}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\linewidth]{pics/pinholeCamera.png}
+    \caption{Pinhole camera projection model. Public domain image from Wikimedia Commons, original author: DrBob, redraw: Pbroks13.}
+    \label{fig:pinhole_model}
+\end{figure}
+
+Because of this projection, distances and angles measured in the image do not directly correspond to real-world measurements. 
+Objects further away from the camera appear smaller, and circular structures may appear elliptical depending on the viewing angle \cite{Hartley2004}. 
+This effect is especially relevant for a dartboard, since the board is planar but observed from an oblique angle.
 
 \subsubsection{Lens Distortion and Correction}
-TODO: ADD CONTENT HERE
 
+Real lenses deviate from the ideal pinhole model. 
+Radial distortion causes straight lines to appear curved, particularly near the image borders. 
+Without correction, this distortion would shift detected dart positions and lead to incorrect score assignment.
+
+Therefore, camera calibration is required to compensate for lens distortion and approximate the ideal projection model before further geometric processing is applied \cite{Zhang2000}.
 
 \subsection{Homography and Planar Mapping}
 
 \subsubsection{Coordinate Transformations}
-TODO: ADD CONTENT HERE
+
+Since the dartboard is a flat surface, a projective transformation can be used to map image coordinates to board coordinates \cite{Hartley2004}. 
+This transformation compensates for perspective distortion and allows measurements to be performed in a normalized coordinate space.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{pics/homography.png}
+    \caption{Planar homography mapping between camera image and world plane. Image by Faisal Qureshi, Ontario Tech University, licensed under CC BY-NC 4.0.}
+    \label{fig:homography}
+\end{figure}
 
 \subsubsection{Image-to-World Mapping}
-TODO: ADD CONTENT HERE
 
+During calibration, reference points on the board are defined. 
+Using these points, the system computes a mapping between camera pixels and positions on the dartboard. 
+Once this mapping is known, any detected dart tip can be converted into a board position independent of camera angle or distance \cite{Hartley2004}.
 
 \section{Dartboard Geometry}
+
 \subsection{Ring and Sector Structure}
 
 \subsubsection{Standard Dartboard Dimensions}
-TODO: ADD CONTENT HERE
+
+A dartboard consists of concentric scoring rings and radial sector divisions. 
+The exact physical dimensions are fixed relative to each other, but training boards may scale these dimensions uniformly. 
+Because the calibration defines each region individually, the detection method remains independent of the absolute board size.
 
 \subsubsection{Sector Indexing and Score Mapping}
-TODO: ADD CONTENT HERE
 
+After calibration, each detected dart tip coordinate is assigned to the nearest ring and sector boundaries. 
+The score is then determined by combining the radial ring multiplier with the sector index.
 
 \subsection{Coordinate Systems}
 
 \subsubsection{Pixel Space}
-TODO: ADD CONTENT HERE
+
+The camera provides positions in pixel coordinates. 
+These coordinates depend on resolution and camera perspective and cannot be used directly for scoring.
 
 \subsubsection{Normalized Board Space}
-TODO: ADD CONTENT HERE
 
+After applying the calibration mapping, positions are expressed in a normalized board coordinate system. 
+In this space, geometric relations correspond to actual board regions, enabling reliable score determination.
 
 \section{Principles of Motion Detection and Object Tracking}
+
 \subsection{Frame Differencing}
 
 \subsubsection{Temporal Stability}
-TODO: ADD CONTENT HERE
+
+The camera must remain fixed during operation. 
+Any movement would appear as motion across the entire image and could be falsely detected as a dart impact. 
+Therefore the board position must stay constant after calibration.
 
 \subsubsection{Noise Sensitivity}
-TODO: ADD CONTENT HERE
 
+Lighting conditions strongly influence motion detection. 
+Reflections, shadows, and brightness fluctuations may be interpreted as movement. 
+Stable illumination and a visually consistent background are therefore required for reliable detection.
 
 \subsection{Blob Detection and Tracking}
 
 \subsubsection{Contour Extraction}
-TODO: ADD CONTENT HERE
+
+By subtracting consecutive frames, moving regions become visible. 
+From these regions, contours corresponding to the dart can be extracted and analyzed to determine the tip position.
 
 \subsubsection{Filtering Strategies}
-TODO: ADD CONTENT HERE
+
+Image filters such as Gaussian blur are applied to reduce noise before contour extraction. 
+Multiple filtering approaches can be evaluated to improve robustness against small lighting variations and sensor noise.

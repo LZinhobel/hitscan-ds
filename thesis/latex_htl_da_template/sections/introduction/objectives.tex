@@ -1,22 +1,25 @@
-
-
 \section{Objectives}
+
 \subsection{Functional Objectives}
 
 \subsubsection{Automatic Hit Detection}
-TODO: ADD CONTENT HERE
+
+The primary functional goal is to develop a software module that automatically detects when a dart hits the board and determines the score segment in which it landed. The system processes the camera stream, identifies a newly appeared stationary dart, and maps its position to the corresponding scoring region.
 
 \subsubsection{Interactive Web Interface}
-TODO: ADD CONTENT HERE
+
+The system provides a web-based user interface running on the same computer that processes the camera feed. Players access the interface from other devices within the local network, such as smartphones or tablets. The interface displays the current score, players, and game state and allows interaction without requiring a monitor near the throwing position.
 
 \subsubsection{Support for Multiple Game Modes}
-TODO: ADD CONTENT HERE
 
+The application supports common steel-dart game variations including 501 and 301. In addition, rule modifiers such as Double In and Double Out are implemented. These modes cover the most frequently played formats and ensure practical usability for typical home play scenarios.
 
 \subsection{Technical Objectives}
 
 \subsubsection{Motion-Based Dart Recognition}
-TODO: ADD CONTENT HERE
+
+The central technical challenge of the vision subsystem is distinguishing newly thrown darts from darts already in the board and from the static background. This is achieved using motion-based detection. By analyzing differences between consecutive video frames, the system detects the moment of impact and determines the final resting position of the dart.
 
 \subsubsection{Manual and Marker-Based Calibration Concepts}
-TODO: ADD CONTENT HERE
+
+To translate image coordinates into scoring regions, a calibration procedure is required. Two approaches are investigated. The first is manual calibration, where the user aligns predefined board landmarks such as the bullseye and ring boundaries. The second is a marker-based approach using printable augmented reality markers placed around the board to estimate the camera pose automatically. The marker-based method aims to reduce setup effort and improve repeatability.

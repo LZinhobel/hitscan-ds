@@ -1,9 +1,15 @@
-
 \section{Project Scope}
+
 \subsection{System Constraints}
 
 \subsubsection{Low-Cost Design}
-TODO: ADD CONTENT HERE
+
+The main constraint of the project is cost. The system should be significantly cheaper than existing automatic scoring solutions and therefore relies only on off-the-shelf consumer hardware. The software must run on commonly available devices such as a Raspberry Pi or a basic home computer without requiring specialized processing units.
+
+The setup should also be practical for private users. Ideally, it can be assembled using everyday household items and a standard webcam that users may already own, avoiding the need for custom-built mounting structures or proprietary equipment.
 
 \subsubsection{Single-Camera Setup}
-TODO: ADD CONTENT HERE
+
+To further reduce cost and installation effort, the system uses only a single camera. This creates a computer vision challenge because a three-dimensional dart impact must be interpreted from a two-dimensional image. The camera position therefore has to be selected carefully so the board remains fully visible and dart occlusions are minimized.
+
+This restriction defines the technical focus of the thesis: determining which reliable information can be extracted from a single video stream in order to identify dart hits and calculate scores.

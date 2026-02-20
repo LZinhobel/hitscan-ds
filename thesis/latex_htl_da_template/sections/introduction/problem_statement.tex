@@ -1,5 +1,11 @@
 \section{Problem Statement}
+
+This thesis addresses the problem of developing a low-cost and accessible automatic scoring system for a traditional steel-tip dartboard. The goal is to connect the physical game with digital processing while keeping the required hardware minimal. The entire application is designed to operate using only a single camera, allowing easy installation in private environments without specialized equipment.
+
 \subsection{Requirements for an Automatic Detection System}
 
 \subsubsection{Real-Time Detection}
-TODO: ADD CONTENT HERE
+
+For practical use, the system must detect hits and update the score almost immediately. Noticeable delays would interrupt the natural flow of the game and reduce usability. Therefore, the processing time from dart impact to score display should remain well below a few seconds.
+
+This requirement limits both the algorithms and the hardware that can be used. The image processing pipeline must efficiently analyze a continuous video stream and reliably detect when a dart lands. After detection, the system must determine which dart caused the change, calculate the score, and update the interface quickly enough that players perceive the reaction as instantaneous.
