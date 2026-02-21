@@ -47,30 +47,50 @@ The general flow of dart scoring is as follows: Players alternate in throwing 3 
 \subsubsection{Logic Responsibility Distribution}
 For the sake of statistical analysis and a more responsive UI, we decided to implement most of the game logic on the frontend. Even when the score busts, the shot should still be counted for stats and therefore should still be persisted. 
 Implementing this logic would be too convluted on the backend, involving rollbacks and unecassary transactions, and is instead handled by the frontend.
-Another reason why the frontend handles most of the logic is that the detection backend is seperated from the database backend. The frontend reacts on sockets from the detection backend and can then handle logic faster than if it were to run over the network to the database backend and back.
-
-
-
-\subsection{Score Calculation}
+Another reason why the frontend handles most of the logic is that the detection backend is seperated from the database backend. The frontend reacts to sockets from the detection backend and can then handle logic faster than if it were to run over the database backend.
 
 \subsubsection{Handling Invalid Throws}
-TODO: ADD CONTENT HERE
-
+A throw is counted as invalid if it lands outside of the board. The system can detect if the dart lands outside of it's calibrated rings, but struggles to see certain angles where the dart wouldn't get scored at all.
+For this edgecase we had to add a button which counted the current throw as a miss. To cover another edgecase where a throw is registered as a wrong score we added a undo last throw button, which deletes the last score from the database. 
 
 \section{Calibration}
+The detection system works in 2 parts: first it plainly estimates the position of the dart tip in the image and then it subsequently uses a set of calibrated rings to determine the score based on the tip's position. Additonally we need to get the position of the "lines" between the sections of the dart board. This works very similiarly to the ring calibration, and requires the user to position them between the 20 and 1 position. 
+The rings and lines have to be manually calibrated by the user due to differences in dartboards and camera position and angle. In our development time we used opencv to calibrate the rings in the debug window directly and were pretty happy with the controls and feel.
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.3]{pics/earlyCalibration.jpg}
+    \caption{Early Prototype of the System with the calibration rings drawn on the camera feed.}
+\end{figure} 
 \subsection{Frontend-Based Calibration}
-
+Implementing the calibration on the frontend wasn't as smooth as we expected it to be. We very quickly ran into the limitation of cameras only being able to be used by one process at a time. Previously our python detection backend started with the frontend and constantly monitored the camera, regardless frontend state. This was a non-issue, as the socket may have fired but never got processed unless the user was on the game page.
+However, when we moved the calibration to the frontend, we couldn't access any cameras and had to implement a workaround: when the user starts the entire system, the detection backend starts without any camera access and waits until it gets it's calibration data. Once the user is done calibrating, the frontend releases all cameras it possibly could have access to and sends the calibration data to the detection backend, which then starts up the camera and starts processing frames.
+Another issue we ran into was the fact that there is no matching identifier between the cameras in python and the cameras in the browser. This means that there is no way for the detection to know which camera the user selected in the frontend. However in most cases the user will only have one external camera connected with possibly an internal laptop camera, which are usually read in the same order in both programs.
+We tried many fixes, but couldn't find anything that worked so we decided to just assume that the first camera in the frontend is the same as the first camera in the backend, which worked for us during testing but may cause issues for users with multiple cameras. A hint was added to the calibration page to only have one camera connected for the best experience.
 \subsubsection{Coordinate System Definition}
-TODO: ADD CONTENT HERE
-
-\subsubsection{Calibration Shape Rendering}
-TODO: ADD CONTENT HERE
-
-
+This was one of the easiest parts of the calibration to implement, as the format of the camera feed in the frontend and the backend were the same. We create a canvas element in the size of the video feed, and draw the calibration rings on top. The X/Y coordinates and scalings of the rings are saved in a JSON format and sent to the backend, which then persists them in a JSON file which is read on every startup. This allows the user to use the same calibration after it has been done once. 
 \subsection{Processing Calibration Data}
+As previously mentioned, the calibration data is saved in the detection backend as a JSON file. 
+\begin{lstlisting}[numbers=left,caption=Example of the calibration data JSON file, label=lst:calibration_data]
+[
+  {
+    "cx": 286.0,
+    "cy": 238.0,
+    "scale": 121.0,
+    "stretch_x": 1.0,
+    "stretch_y": 1.0
+  },
+  {
+    "cx": 285.0,
+    "cy": 235.0,
+    "scale": 83.0,
+    "stretch_x": 1.0,
+    "stretch_y": 1.0
+  },
+  ...
+]
+\end{lstlisting}
 
-\subsubsection{Geometry Normalization}
-TODO: ADD CONTENT HERE
+On launch of the detection backend, we create a virtual canvas which contains the active camera feed and draw the calibration rings on top of it.
 
 
 \section{Dart Detection}
