@@ -4,22 +4,22 @@
 
 \subsubsection{Automatic Hit Detection}
 
-The primary functional goal is to develop a software module that automatically detects when a dart hits the board and determines the score segment in which it landed. The system processes the camera stream, identifies a newly appeared stationary dart, and maps its position to the corresponding scoring region.
+The main goal is to create a software module that can detect the moment a dart hits the target and the section it has hit. It analyzes the video stream, finds a new stationary dart, and maps it to the correct section.
 
 \subsubsection{Interactive Web Interface}
 
-The system provides a web-based user interface running on the same computer that processes the camera feed. Players access the interface from other devices within the local network, such as smartphones or tablets. The interface displays the current score, players, and game state and allows interaction without requiring a monitor near the throwing position.
+It is necessary to implement a web interface that can be accessed on the same computer that analyzes the video stream. Players can interact with it using other devices connected to the same local network, such as smartphones or tablets.
 
 \subsubsection{Support for Multiple Game Modes}
 
-The application supports common steel-dart game variations including 501 and 301. In addition, rule modifiers such as Double In and Double Out are implemented. These modes cover the most frequently played formats and ensure practical usability for typical home play scenarios.
+The developed application supports different versions of the game. Most commonly used versions include 501 and 301. In addition, the following rule variations have been implemented: Double In and Double Out. These versions cover the most popular ones, making it easier to play with the developed software.
 
 \subsection{Technical Objectives}
 
 \subsubsection{Motion-Based Dart Recognition}
 
-The central technical challenge of the vision subsystem is distinguishing newly thrown darts from darts already in the board and from the static background. This is achieved using motion-based detection. By analyzing differences between consecutive video frames, the system detects the moment of impact and determines the final resting position of the dart.
+The main problem is to recognize the moment a new dart is thrown, distinguishing it from those already in the board and static objects in the background. This is achieved through motion detection. By analyzing the difference between two consecutive frames in a video stream, it is possible to detect the moment a dart hits the target and the point it has come to rest at.
 
 \subsubsection{Manual and Marker-Based Calibration Concepts}
 
-To translate image coordinates into scoring regions, a calibration procedure is required. Two approaches are investigated. The first is manual calibration, where the user aligns predefined board landmarks such as the bullseye and ring boundaries. The second is a marker-based approach using printable augmented reality markers placed around the board to estimate the camera pose automatically. The marker-based method aims to reduce setup effort and improve repeatability.
+In order to translate the image coordinates into the scoring regions, the need for a calibration process arises. Two methods are discussed for the purpose. First, the manual method of calibration, where the user is required to align the board landmarks such as the bullseye and the ring boundaries, is discussed. Secondly, the marker-based method, where augmented reality markers are placed on the board, is also discussed.

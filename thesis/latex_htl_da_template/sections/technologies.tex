@@ -1,157 +1,158 @@
-
 \section{System Requirements and Constraints}
+
 \subsection{Real-Time Processing Requirements}
 
 \subsubsection{Latency Constraints}
-TODO: ADD CONTENT HERE
+The entire process from capture, through preprocessing, motion detection, blob extraction, tip detection, and scoring, needs to be completed within the time interval between two successive frames. Since the frame rate is 30 frames per second, the time constraint is 33 milliseconds, while at 15 frames per second, the time constraint is 66 milliseconds \cite{Szeliski2022}. It was decided that the end-to-end latency from the time the dart hits until the time the score appears on the screen needs to be less than 100 milliseconds. This was determined through informal testing, where it was observed that such high delays are noticeable during the course of play. Non-critical processing such as the creation of overlays and match logging is done after the commitment of the detection result and is not subject to the above constraints.
 
 \subsubsection{Pipeline Responsiveness}
-TODO: ADD CONTENT HERE
+The responsiveness of the pipeline is maintained by making the more expensive operations dependent on the results obtained from the less expensive operations. Capture of the frame and the differencing operation are performed unconditionally on every frame. Subpixel tip detection, perspective correction, and sector assignment are performed on every frame, provided the differencing operation indicates motion greater than the specified threshold.
 
 
 \subsection{Hardware Constraints}
 
 \subsubsection{Single-Camera Assumption}
-TODO: ADD CONTENT HERE
+The system assumes the availability of a single camera.
+By restricting the problem domain to a single-camera setup, a conscious decision has been made. This eliminates the synchronization problem, ensures manageability of the calibration process for the end user, and minimizes material costs to a single USB camera module. In practice, spatial reasoning is restricted to a single image plane. A hand occluding a dart or a previously lodged dart cannot be geometrically reasoned. However, this is acceptable for the problem domain since the dart tip is always visible from a frontal overhead position at the time of impact.
 
 \subsubsection{Static Mount Requirements}
-TODO: ADD CONTENT HERE
-
+This detection approach is predicated on a static camera position between the time of calibration and use. This is necessary for the background model, the stored ArUco pose, and the pixel-to-board homography. Any physical movement of the camera, even slight, invalidates the stored calibration and causes a scoring problem due to a systematic error. A startup routine is implemented to ensure the presence of a valid stored calibration. If this is missing or marked as invalid, the system prompts a recalibration routine.
 
 \section{Programming Language and Runtime Environment}
+
 \subsection{Python as Core Development Language}
 
 \subsubsection{Computer Vision Suitability}
-TODO: ADD CONTENT HERE
+Python has been selected due to the maturity of the OpenCV bindings. Every function in the performance-critical path, i.e., encompassing the camera grab, color conversion, morphology operations, contour detection, ArUco detection, and \texttt{solvePnP} execution, is performed within OpenCV's compiled C++ backend. Python is used to orchestrate this process. Hence, only function call overhead is incurred in the Python interpreter. This is consistent with the cost model we would expect for this type of real-time processing pipeline.
+
 
 \subsubsection{Scientific Ecosystem}
-TODO: ADD CONTENT HERE
-
+This is because the underlying data structure of NumPy arrays matches the internal memory structure of OpenCV, allowing for efficient passing of frames between libraries without copying data. Additionally, the scipy library offered the necessary geometric primitives for implementing the mapping using polar coordinates during the early stages of prototyping. Matplotlib also helped in the inspection of intermediate results during the development stage, such as difference frames, binary masks, and contour maps, without needing a separate debugging tool. The fact that the above libraries are available as drop-in modules greatly reduced the development cycles during parameter tuning.
 
 \subsection{Runtime Characteristics}
 
 \subsubsection{Interpreter-Based Execution}
-TODO: ADD CONTENT HERE
+The interpreter imposes a certain overhead on the execution of the Python bytecode in a loop over the pixel data. However, this was not a performance constraint, as no stage of the pipeline needs to loop over the pixel data at the Python level. All pixel array operations are vectorized using NumPy or OpenCV \cite{Harris2020}. There is one loop at the Python level, which iterates over a small list of filtered contour candidates. This has negligible performance impact, as it needs to process at most a few objects per frame.
+
 
 \subsubsection{Performance Considerations}
-TODO: ADD CONTENT HERE
-
+The primary optimization performed in the project was the implementation of the region of interest cropping. By limiting the processing to the region of the image where the dartboard is, the amount of pixels processed was reduced by about 60 to 70 percent compared to the full frame \cite{Viola2001}. Additionally, the output buffers are pre-filled and passed to the OpenCV in-place operations, which avoids the heap allocation overhead. In the case where the early exit is taken and no motion is detected, the pipeline completes very quickly, in less than 10 milliseconds on typical hardware, which leaves plenty of time for the user interface thread.
 
 \section{Computer Vision Framework}
+
 \subsection{OpenCV}
 
 \subsubsection{Image Capture and Preprocessing}
-TODO: ADD CONTENT HERE
+The images are captured using the OpenCV function \texttt{cv2.VideoCapture}. After that, the images are converted to grayscale, which is necessary for the detection. However, sometimes it is also necessary to keep the color information, for example, to filter the specular highlights on the metallic ring. In this case, the image is converted to the HSV space. Lens distortion is compensated using the intrinsic parameters obtained during the chessboard calibration. This is necessary for the outer scoring rings, where otherwise the apparent position of the darts on the board would be off by several millimeters due to the barrel distortion.
 
 \subsubsection{Filtering and Thresholding}
-TODO: ADD CONTENT HERE
-
+A Gaussian blur is applied before the background subtraction step to remove sensor noise which could cause unwanted contour formation. Otsu's method is then used to set the binary threshold after background subtraction, which eliminates the need for retuning the fixed threshold value in response to changing ambient light conditions \cite{Otsu1979}. Morphological opening is then used to remove isolated single-pixel noise, which is followed by a closing function to fill in small gaps in dart-sized objects before contour extraction. As a last resort for dealing with environments featuring significant illumination gradients across the board, adaptive thresholding is also supported, though at the expense of a small increase in processing time.
 
 \subsection{Supporting Libraries}
 
 \subsubsection{NumPy for Numerical Computation}
-TODO: ADD CONTENT HERE
+All coordinate data computed during the OpenCV pipeline, including contour points, homography, and marker corners, is represented as NumPy arrays and remains this way throughout the entire process. The computation of pixel coordinates from board coordinates is accomplished through a matrix multiplication followed by an \texttt{arctan2} function, which is performed over the entire set of candidate points simultaneously. This maintains the high speed of the coordinate computation step even when multiple candidates are present.
 
 \subsubsection{Geometry Utility Libraries}
-TODO: ADD CONTENT HERE
-
+A utility library has been developed for handling the conversion between polar coordinates and sector coordinates, including identifying which numbered segment and which type of ring (single, double, triple, or bull) a given board coordinate represents. It uses a lookup table of angular and radial thresholds to represent the standard dartboard layout and exposes a single function which accepts a coordinate in board space and returns the corresponding score value. This separation of code from the detection routine also allowed for the independent unit testing of the dartboard scoring rules without the requirement for image resources.
 
 \section{Calibration Approaches}
+
 \subsection{Marker-Based Calibration}
 
 \subsubsection{ArUco Marker Detection}
-TODO: ADD CONTENT HERE
+Four ArUco markers are placed at known positions around the board frame \cite{Garrido-Jurado2014}. The corner points are identified in the camera view through \texttt{cv2.aruco.detectMarkers} with the ArUco dictionary \texttt{DICT\_4X4\_50}. The markers are uniquely identified with different IDs. Thus, even in the event that one marker is occluded, the corner points are identified unambiguously. The corner points are then passed to the next stage for estimation.
+
 
 \subsubsection{Pose Estimation}
-TODO: ADD CONTENT HERE
-
+The corner points are then used to obtain the camera pose with respect to the board through \texttt{cv2.solvePnP}. A homography matrix is then obtained that maps any point in the camera view to the corresponding point in the front view \cite{Hartley2004}. The homography matrix is stored for the entire duration as the camera is not moving. 
 
 \subsection{Manual Calibration}
 
-\subsubsection{User-Defined Ring Placement}
-TODO: ADD CONTENT HERE
-
-\subsubsection{User-Defined Sector Alignment}
-TODO: ADD CONTENT HERE
-
+\subsubsection{User-Defined Ring and Sector Placement}
+The user may choose not to use the ArUco markers for calibration. Instead, the user is prompted to click the center of the bullseye in the live view window. Then the user is prompted to click any point on the outer double ring. The two points are used to calculate the center and radius of the dartboard in pixels. All the radial thresholds are then scaled from the derived radius according to the proportions in the conventional dartboard.
+After the rings are set up, the user selects one of the known sector boundaries. The known sector boundary between segments 20 and 1 located at the top of the board was used as the standard to measure the angular offset. The 20 sector boundaries are then evenly distributed with 18-degree increments of the reference angle. This is necessary since the board's rotational orientation with regard to the camera cannot be determined beforehand and will change depending on how the board is mounted.
 
 \subsection{Comparison of Calibration Methods}
 
 \subsubsection{Setup Complexity}
-TODO: ADD CONTENT HERE
+ArUco calibration requires the user to place four markers and attach them to the board before first-time usage. Once the markers are attached, the process runs automatically every time the board starts without further user intervention. Manual calibration requires no pre-installation but requires the user to interact with the program several times each time the board starts or the camera is moved. For a permanent installation, ArUco would be much simpler to set up; for an ad hoc setting, manual calibration would be preferable to the requirement of attaching four markers to the board.
 
 \subsubsection{Robustness in Real Environments}
-TODO: ADD CONTENT HERE
-
+Based on the experiments performed, it was found that the ArUco method of calibration was more reliable and consistent with regard to the assignment of each sector between sessions since it takes into consideration the homography to correct for perspective distortion. The manual method would gradually accumulate error depending on the accuracy of the clicks and would not compensate for perspective problems. Although under controlled conditions the accuracy of the ArUco and manual method of calculating the homography would be nearly equivalent with regard to the accuracy of the points scored by each method, under less than optimal camera angles with regard to the board, the homography method would clearly produce fewer errors with regard to the correct classification of adjacent segments along the board boundaries.
 
 \section{Motion Detection Techniques}
+
 \subsection{Frame Differencing}
 
 \subsubsection{Background Selection}
-TODO: ADD CONTENT HERE
+The background model is pre-initialized using a median value computed over a short frame buffer taken before play begins, during which time no dart is on the board. A median rather than a mean value is used to resist transient effects of passing shadows or exposure changes \cite{Stauffer1999}. During play, the background model is not updated since the dart should be visible as a persistent foreground object. Background updating is invoked only when the user indicates that the darts have been removed from the board.
 
 \subsubsection{Temporal Stability}
-TODO: ADD CONTENT HERE
+A single-frame difference is noisy by nature. A dart landing in a single frame and staying there in subsequent frames would result in a high difference in the landing frame and almost zero differences in subsequent frames. To avoid false alarms due to fluorescent lighting flicker and board surface vibrations, the system requires the blob to be present in at least two consecutive difference frames before it is considered a hit.
 
 
 \subsection{Threshold-Based Segmentation}
 
 \subsubsection{Binary Mask Generation}
-TODO: ADD CONTENT HERE
+Otsu's thresholding is used to convert the absolute difference between the current frame and the background model to a binary mask. This is quite applicable in this case, considering that the difference image is mostly dark with a small bright blob corresponding to the dart. This is a binary image problem, and Otsu's method is applicable in this case. This mask is the only input to the contour extraction process.
 
 \subsubsection{Sensitivity to Noise}
-TODO: ADD CONTENT HERE
+There are two sources of noise in this problem. One is the specular reflection from the metallic ring between the double and treble regions. The other is pixel noise at low levels. Sensor noise is taken care of by the Gaussian blur applied before the differencing process. Specular reflection is taken care of by the morphological opening process that removes objects with sizes below a specified minimum area. This is set empirically based on the false positives encountered on the development board.
 
 
 \subsection{Blob Detection}
 
 \subsubsection{Contour Extraction}
-TODO: ADD CONTENT HERE
+The function \texttt{cv2.findContours} is called with the binary mask and the flag
+\texttt{RETR\_EXTERNAL} to retrieve only the outermost contours while ignoring any
+nested ones. This is sufficient for the dart tip projection because it is a compact
+area with no inner regions. The returned value is a list of contour points that
+describe the outline of each region in the image.
+
 
 \subsubsection{Filtering of Irrelevant Regions}
-TODO: ADD CONTENT HERE
-
+The candidate regions are filtered through four different filters before any tip coordinates are calculated. The first filter is area; regions with an area smaller than the empirically derived minimum or larger than the maximum possible cross-section are discarded. The second filter is the aspect ratio; highly elongated shapes are not likely to be the dart tip viewed from the top. The third filter is the solidity of the shape, defined as the area enclosed by the contour divided by the area of the convex hull. Irregular shapes due to reflections or the cables have lower solidity values. The fourth filter is the spatial location; regions with centroids outside the known board region are not processed further. The number of regions remaining at this stage for each frame is zero or one or very rarely two, for the tip localization to take place.
 
 \section{Frontend and Visualization Technologies}
+
 \subsection{Rendering Concepts}
 
 \subsubsection{Virtual Dartboard Canvas}
-TODO: ADD CONTENT HERE
+The virtual dartboard is drawn to a special image buffer that is not used in the processing pipeline. Two different frames are processed in parallel in the image processing pipeline: the camera frame used for processing, and the display frame that is the combined effect of the camera feed and the overlay. This approach was taken after early versions showed that the processing pipeline would interpret the pixels used to draw the colored circles for the dartboard highlights as motion and generate false detections in the differencing stage.
 
 \subsubsection{User Interaction Mechanisms}
-TODO: ADD CONTENT HERE
-
+Mouse callbacks associated with the display window control all user interactions during the calibration process. The mouse click is recorded in image coordinates and converted into board coordinates using the current state of calibration. The dragging operation allows for re-positioning of the boundaries of rings or a reference sector line during initial placement. The interaction events update only the calibration data structure and do not affect either of the image buffers.
 
 \subsection{Game State Representation}
 
 \subsubsection{Score Display}
-TODO: ADD CONTENT HERE
+The score is updated immediately upon receiving a hit event from the detection module and is displayed on the display frame in the same compositing pass as the dartboard overlay. The detection result and score update are synchronized for the user, and since both are performed in the same frame processing cycle, no specific synchronization mechanism is required.
 
 \subsubsection{Game Mode Management}
-TODO: ADD CONTENT HERE
-
+The system supports different game modes, such as 501 and Cricket, each represented as a state machine processing the hit events and keeping its score and turn state. The state machine is reset upon mode switching; however, this does not affect the detection module. This approach ensures complete decoupling of game logic and vision code, making debugging easier and enabling easier addition of other game modes without affecting other code layers.
 
 \section{Alternative Technology Approaches}
+
 \subsection{Machine Learning-Based Detection}
 
 \subsubsection{Data Requirements}
-TODO: ADD CONTENT HERE
+A learned model, such as a small object detection network fine-tuned for detecting dart tips, would require a dataset of images of dart impacts that include a wide range of different types of darts, different lighting conditions, and different board configurations. Compiling a dataset of this kind from scratch is not feasible within this project's constraints. The existing publicly available datasets for dart detection are either unavailable or insufficiently extensive in scope for developing a model that has a reliable ability to generalize, and this was a major reason for choosing not to use this approach as a primary detection mechanism.
 
 \subsubsection{Generalization Challenges}
-TODO: ADD CONTENT HERE
-
+Even with sufficient training data, the learned model would have to be tested for various camera models and lens types since the appearance of the dart tip varies greatly depending on the resolution of the camera sensor and the focal length of the lens. The classical approach pipeline used for this project has been found to be largely immune to these variations since it relies on the differences between the frames rather than the appearance of the dart tip.
 
 \subsection{Multi-Camera Systems}
 
 \subsubsection{Accuracy Improvements}
-TODO: ADD CONTENT HERE
+Using two cameras with distinct angles of view would allow us to accurately locate the dart tip in three dimensions and remove the ambiguity of depth found with single-camera projection. This would improve robustness to occlusion since if the dart tip is occluded by the board for one camera, it would be visible to the second. While accuracy improvements would be substantial for competitive or commercial applications, they are considered unnecessary for the recreational scenario targeted by this project.
 
 \subsubsection{Calibration Overhead}
-TODO: ADD CONTENT HERE
-
+In addition to the individual intrinsic camera calibrations for each camera, the two-camera approach would also require stereo camera extrinsic calibration to find the relative orientation between cameras. This would be more prone to errors due to mechanical instability between cameras since any flexing of the camera mounting would cause a baseline error, which would be directly propagated to the accuracy of the triangulated coordinates.
 
 \section{Technology Selection Rationale}
+
 \subsection{Justification for the Chosen Stack}
 
 \subsubsection{Alignment with Project Objectives}
-TODO: ADD CONTENT HERE
+The choice of Python, OpenCV, NumPy, and ArUco-based calibration was driven by a desire to meet specific project objectives without incurring unnecessary dependencies. The choice of OpenCV gives us primitives for calibration, homography, and contour analysis that underlie the entire process; NumPy ensures efficient inter-primitive data transfer without incurring copy penalties; ArUco eliminates the need for manual calibration in each session, which is a requirement of a permanent installation; and Python brings all of this together in a manner that is both maintainable and easily instrumented. The chosen stack works out of the box without modification on both Linux and Windows, thereby covering all required deployment scenarios, and does not require additional hardware of any kind other than the camera itself.

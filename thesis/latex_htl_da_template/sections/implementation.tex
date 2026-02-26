@@ -56,7 +56,7 @@ For this edgecase we had to add a button which counted the current throw as a mi
 \section{Calibration}
 The detection system works in 2 parts: first it plainly estimates the position of the dart tip in the image and then it subsequently uses a set of calibrated rings to determine the score based on the tip's position. Additonally we need to get the position of the "lines" between the sections of the dart board. This works very similiarly to the ring calibration, and requires the user to position them between the 20 and 1 position. 
 The rings and lines have to be manually calibrated by the user due to differences in dartboards and camera position and angle. In our development time we used opencv to calibrate the rings in the debug window directly and were pretty happy with the controls and feel.
-\begin{figure}
+\begin{figure}[h]
     \centering
     \includegraphics[scale=0.3]{pics/earlyCalibration.jpg}
     \caption{Early Prototype of the System with the calibration rings drawn on the camera feed.}

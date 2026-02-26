@@ -4,12 +4,8 @@
 
 \subsubsection{Low-Cost Design}
 
-The main constraint of the project is cost. The system should be significantly cheaper than existing automatic scoring solutions and therefore relies only on off-the-shelf consumer hardware. The software must run on commonly available devices such as a Raspberry Pi or a basic home computer without requiring specialized processing units.
-
-The setup should also be practical for private users. Ideally, it can be assembled using everyday household items and a standard webcam that users may already own, avoiding the need for custom-built mounting structures or proprietary equipment.
+The first constraint of the system is its cost. The system should be much cheaper than existing automatic dartboard scoring systems and thus be comprised of off-the-shelf consumer electronics. The software should run on consumer-level devices such as the Raspberry Pi or a standard home computer without the need for additional processing units. The system should be affordable for the average consumer and, if possible, be built with materials found within the average household and a standard webcam they may already own to minimize the need for additional construction materials and equipment.
 
 \subsubsection{Single-Camera Setup}
 
-To further reduce cost and installation effort, the system uses only a single camera. This creates a computer vision challenge because a three-dimensional dart impact must be interpreted from a two-dimensional image. The camera position therefore has to be selected carefully so the board remains fully visible and dart occlusions are minimized.
-
-This restriction defines the technical focus of the thesis: determining which reliable information can be extracted from a single video stream in order to identify dart hits and calculate scores.
+In order to further minimize the overall cost and construction time of the system, it will be designed to use a single camera. This has the added problem of being a computer vision problem since the 3D dart landing must be determined by analyzing the 2D video feed. This means the camera must be positioned so the dartboard is fully visible and the dart landing on it will cause minimal occlusion. This constraint will be the basis of the thesis and will be used to determine what information can be extracted from the video feed to determine dart landing and calculate scores.
