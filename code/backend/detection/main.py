@@ -100,6 +100,26 @@ def draw_virtual_canvas():
 
     return canvas
 
+def build_board_ignore_mask(frame_shape, ring_data, padding=20):
+    """
+    Returns a mask where True = IGNORE (outside the dartboard).
+    Everything outside the outermost ring + padding is masked out.
+    """
+    h, w = frame_shape[:2]
+    mask = np.ones((h, w), dtype=np.uint8)  # Start: ignore everything
+
+    if ring_data is None or len(ring_data) == 0:
+        return mask.astype(bool)
+
+    outer_ring = ring_data[0]  # ring_data[0] is the outermost ring
+    cx, cy = int(outer_ring[0]), int(outer_ring[1])
+    # Add padding to axes so the board edge itself isn't masked
+    ax = int(outer_ring[2] * outer_ring[3]) + padding
+    ay = int(outer_ring[2] * outer_ring[4]) + padding
+
+    cv2.ellipse(mask, (cx, cy), (ax, ay), 0, 0, 360, 0, -1)
+
+    return mask.astype(bool)
 
 @app.route("/")
 def index():
@@ -250,7 +270,7 @@ def main():
     print("Press 'q' to quit. Throw darts and watch for results...")
 
     cv2.namedWindow("Dartboard View")
-    cv2.setMouseCallback("Dartboard View", hover_callback)
+    cv2.setMouseCallback("Dartboard View", mouse_callback)
     cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
                        lambda val: setattr(detector, "motion_thresh", val))
 
@@ -263,6 +283,20 @@ def main():
         vis_frame = raw_frame.copy()
 
         virtual_canvas = draw_virtual_canvas()
+        # Build board ignore mask FIRST
+        outer = ring_data[0]
+        board_ignore_mask = np.ones(raw_frame.shape[:2], dtype=np.uint8)
+        cx, cy = int(outer[0]), int(outer[1])
+        ax = int(outer[2] * outer[3]) + 25
+        ay = int(outer[2] * outer[4]) + 25
+        cv2.ellipse(board_ignore_mask, (cx, cy), (ax, ay), 0.0, 0.0, 360.0, (0,), -1)
+
+        # Canvas mask for vis only — not used in ignore anymore
+        canvas_mask = np.any(virtual_canvas != 0, axis=2).astype(np.uint8)
+
+        # Only ignore outside the board
+        combined_ignore = board_ignore_mask.astype(bool)
+
         mask = virtual_canvas[:, :, 1] > 0
         vis_frame[mask] = virtual_canvas[mask]
 
@@ -277,7 +311,7 @@ def main():
                 print(f"[Hover] ({hx}, {hy}) -> {field}")
 
                 cv2.putText(
-                    frame,
+                    vis_frame,
                     f"Hover Score: {field}",
                     (10, 60),
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -286,7 +320,7 @@ def main():
                     2
                 )
 
-        new_darts, thresh_img, boxes, motion_level = detector.update(proc_frame)
+        new_darts, thresh_img, boxes, motion_level = detector.update(proc_frame, ignore_mask=combined_ignore)
 
         cv2.putText(vis_frame, f"Motion Level: {motion_level:.0f}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
@@ -308,6 +342,11 @@ def main():
 
         for (x, y) in detector.known_darts:
             cv2.circle(vis_frame, (int(x), int(y)), 3, (255, 0, 0), -1)
+
+        ignore_overlay = vis_frame.copy()
+        ignore_overlay[board_ignore_mask.astype(bool)] = (0, 0, 60)
+        cv2.addWeighted(ignore_overlay, 0.4, vis_frame, 0.6, 0, vis_frame)
+        cv2.ellipse(vis_frame, (cx, cy), (ax, ay), 0.0, 0.0, 360.0, (0, 0, 255), 2)
 
         thresh_display = cv2.cvtColor(thresh_img, cv2.COLOR_GRAY2BGR) if thresh_img is not None else np.zeros_like(vis_frame)
         thresh_display = cv2.resize(thresh_display, (vis_frame.shape[1], vis_frame.shape[0]))
