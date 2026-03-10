@@ -355,6 +355,4 @@ def main():
 
 
 if __name__ == "__main__":
-    os.makedirs("debug", exist_ok=True)
-    Thread(target=main, daemon=True).start()
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
