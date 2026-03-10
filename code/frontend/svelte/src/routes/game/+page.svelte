@@ -20,7 +20,7 @@
     score: number;
     hitType: "single" | "double" | "triple" | "miss";
     coords: { x: number; y: number };
-    hitArrayIndex: number; 
+    hitArrayIndex: number;
     scoreId: number | null;
   }
 
@@ -37,6 +37,9 @@
   let player1Hits = $state(["", "", ""]);
   let player2Hits = $state(["", "", ""]);
 
+  $inspect(player1Hits)
+  $inspect(player2Hits)
+  
   let hasWon = $state(0);
 
   // ─── Canvas ──────────────────────────────────────────────────────────────────
@@ -51,6 +54,11 @@
   function mapToBoard(hitX: number, hitY: number) {
     if (!outer || !canvas) return { x: hitX, y: hitY };
     const scale = Math.min(canvas.width, canvas.height) / (2 * outer.radius);
+    console.log("Drawing at", {
+      x: canvas.width / 2 + (hitX - outer.x) * scale,
+      y: canvas.height / 2 + (hitY - outer.y) * scale,
+    });
+
     return {
       x: canvas.width / 2 + (hitX - outer.x) * scale,
       y: canvas.height / 2 + (hitY - outer.y) * scale,
@@ -96,15 +104,18 @@
     if (match) {
       const base = parseInt(match[2]);
       switch (match[1].toUpperCase()) {
-        case "S": return { hitType: "single", score: base };
-        case "D": return { hitType: "double", score: base * 2 };
-        case "T": return { hitType: "triple", score: base * 3 };
+        case "S":
+          return { hitType: "single", score: base };
+        case "D":
+          return { hitType: "double", score: base * 2 };
+        case "T":
+          return { hitType: "triple", score: base * 3 };
       }
     }
 
     const numeric = parseInt(rawScore);
     if (isNaN(numeric) || numeric === 0) return { hitType: "miss", score: 0 };
-    if (numeric === 50)                   return { hitType: "double", score: 50 };
+    if (numeric === 50) return { hitType: "double", score: 50 };
     return { hitType: "single", score: numeric };
   }
 
@@ -128,13 +139,11 @@
   // ─── Turn logic ──────────────────────────────────────────────────────────────
 
   function advanceTurn() {
-    clearDartboard();
     shotsThisTurn = 0;
     currentPlayer = (currentPlayer + 1) % 2;
   }
 
   function endTurnAfterBust(playerIndex: number) {
-    clearDartboard();
     shotsThisTurn = 0;
     currentPlayer = (playerIndex + 1) % 2;
   }
@@ -146,6 +155,14 @@
 
   function handleDartHit(e: any) {
     try {
+      if (shotsThisTurn === 0) {
+        clearDartboard();
+        if (currentPlayer === 0) {
+          clearHits(0);
+          clearHits(1);
+        }
+      }
+
       hitCords = [...hitCords, e.coords];
       draw();
 
@@ -172,28 +189,43 @@
   async function subtractPoints(
     playerIndex: number,
     score: number,
-    hitType: "single" | "double" | "triple" | "miss"
+    hitType: "single" | "double" | "triple" | "miss",
   ) {
     if (isNaN(score) || score > 60 || score < 0) return;
 
     if (rulesState.variant === "double-in" && !playerScoring[playerIndex]) {
-      if (hitType !== "double") { endTurnAfterBust(playerIndex); return; }
+      if (hitType !== "double") {
+        endTurnAfterBust(playerIndex);
+        return;
+      }
       playerScoring[playerIndex] = true;
     }
 
     const remaining = playerPoints[playerIndex] - score;
 
-    if (rulesState.variant === "double-out" && remaining === 0 && hitType !== "double") {
-      endTurnAfterBust(playerIndex); return;
+    if (
+      rulesState.variant === "double-out" &&
+      remaining === 0 &&
+      hitType !== "double"
+    ) {
+      endTurnAfterBust(playerIndex);
+      return;
     }
 
-    if (remaining < 0) { endTurnAfterBust(playerIndex); return; }
+    if (remaining < 0) {
+      endTurnAfterBust(playerIndex);
+      return;
+    }
 
     try {
       const res = await fetch("http://localhost:8000/score/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player: players[playerIndex]?.id, game: gameId, score }),
+        body: JSON.stringify({
+          player: players[playerIndex]?.id,
+          game: gameId,
+          score,
+        }),
       });
 
       if (!res.ok) {
@@ -239,7 +271,7 @@
         console.error("Error deleting score:", err);
       }
     }
-    
+
     currentPlayer = last.playerIndex;
     shotsThisTurn = last.hitArrayIndex;
 
@@ -247,7 +279,8 @@
   }
 
   async function checkWinner() {
-    const winnerIndex = playerPoints[0] === 0 ? 0 : playerPoints[1] === 0 ? 1 : -1;
+    const winnerIndex =
+      playerPoints[0] === 0 ? 0 : playerPoints[1] === 0 ? 1 : -1;
     if (winnerIndex === -1) return;
 
     hasWon = winnerIndex + 1;
@@ -271,7 +304,10 @@
   // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
   onMount(async () => {
-    socket = io("http://localhost:5000", { transports: ["websocket"], reconnection: true });
+    socket = io("http://localhost:5000", {
+      transports: ["websocket"],
+      reconnection: true,
+    });
     socket.on("dart_hit", handleDartHit);
 
     players = playerState.getPlainPlayers();
@@ -325,7 +361,7 @@
         <h1>{$playerState.players[hasWon - 1]?.name} has Won</h1>
         <div id="buttonRow">
           <a href="/"><Button text="Home" /></a>
-          <a onclick={() =>restartGame()}><Button text="Restart" /></a>
+          <a onclick={() => restartGame()}><Button text="Restart" /></a>
         </div>
       </div>
     </div>
@@ -339,7 +375,9 @@
     </h1>
 
     <div id="boardControls">
-      <button onclick={undoLastShot} disabled={hasWon !== 0}>Undo Last Shot</button>
+      <button onclick={undoLastShot} disabled={hasWon !== 0}
+        >Undo Last Shot</button
+      >
     </div>
 
     {#each [{ hits: player1Hits, index: 0 }, { hits: player2Hits, index: 1 }] as { hits, index }}
