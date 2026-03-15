@@ -34,7 +34,7 @@ The dartboard is planar, so the projective transformation is used to map the ima
 
 \subsubsection{Image-to-World Mapping}
 
-During the process of calibration, reference points on the board are defined. Using this information, a mapping is created between the camera pixels and the dartboard positions. After this process is complete, the position of the dart tip can be converted to a position on the board regardless of the angle or distance of the camera. This is a result of the independence of the detection process from the camera angle or distance \cite{Hartley2004}.
+During calibration, reference points on the board are matched with their image positions. This correspondence defines a mapping from camera pixels to board coordinates, allowing later detections to be interpreted in the dartboard reference frame \cite{Hartley2004}.
 
 \section{Dartboard Geometry}
 
@@ -46,7 +46,7 @@ A dartboard has a series of scoring rings and sector divisions. The dimensions o
 
 \subsubsection{Sector Indexing and Score Mapping}
 
-Using the information gained during the process of calibration, the dart tip position is assigned a score based on the sector divisions. This is possible due to the independence of the detection process.
+Once a point has been expressed in board coordinates, its radius and angle determine the corresponding ring and numbered sector.
 
 \subsection{Coordinate Systems}
 
@@ -56,7 +56,7 @@ The camera provides a position in pixel space. This is a function of the camera'
 
 \subsubsection{Normalized Board Space}
 
-Using the information obtained during the process of calibration, the dart tip position is expressed in a normalized board coordinate system. This is possible due to the independence of the detection process.
+After calibration, detected points can be represented in a normalized board coordinate system that is independent of the raw image perspective.
 
 \section{Principles of Motion Detection and Object Tracking}
 
@@ -64,7 +64,7 @@ Using the information obtained during the process of calibration, the dart tip p
 
 \subsubsection{Temporal Stability}
 
-During the process of motion detection, the camera must be static. Any movement would be expressed as motion in the entire image. This would be misinterpreted by the detection process as a dart strike. This means that the dartboard must be static after the process of calibration.
+Motion-based detection assumes a static camera and a stable scene. Otherwise, global image changes would be indistinguishable from the local motion caused by a dart impact.
 
 \subsubsection{Noise Sensitivity}
 
@@ -74,8 +74,8 @@ Lighting conditions play an important role in the detection of motions. The refl
 
 \subsubsection{Contour Extraction}
 
-By performing frame subtraction, the moving areas are detectable. The contours of the moving area corresponding to the dart are extracted and analyzed to find the tip of the dart.
+After frame differencing isolates moving regions, contour extraction describes their outlines so that candidate dart impacts can be localized geometrically.
 
 \subsubsection{Filtering Strategies}
 
-Filters are used to remove noise from the image. The filters may be tested to find the best filtering strategy to overcome the lighting and noise problems.
+Filtering suppresses noise and removes implausible regions before further localization is attempted.

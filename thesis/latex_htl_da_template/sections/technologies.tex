@@ -1,3 +1,5 @@
+\setauthor{\secondauthor}
+
 \section{System Requirements and Constraints}
 
 \subsection{Real-Time Processing Requirements}
@@ -137,22 +139,22 @@ The system supports different game modes, such as 501 and Cricket, each represen
 \subsection{Machine Learning-Based Detection}
 
 \subsubsection{Data Requirements}
-A learned model, such as a small object detection network fine-tuned for detecting dart tips, would require a dataset of images of dart impacts that include a wide range of different types of darts, different lighting conditions, and different board configurations. Compiling a dataset of this kind from scratch is not feasible within this project's constraints. The existing publicly available datasets for dart detection are either unavailable or insufficiently extensive in scope for developing a model that has a reliable ability to generalize, and this was a major reason for choosing not to use this approach as a primary detection mechanism.
+A learned detector would require a curated dataset of dart impacts across different lighting conditions, board wear states, dart geometries, and camera setups. Building such a dataset at the required scale was outside the scope of this project. Publicly available alternatives were either inaccessible or too narrow to support robust generalization, so a data-driven approach was not selected as the primary method.
 
 \subsubsection{Generalization Challenges}
-Even with sufficient training data, the learned model would have to be tested for various camera models and lens types since the appearance of the dart tip varies greatly depending on the resolution of the camera sensor and the focal length of the lens. The classical approach pipeline used for this project has been found to be largely immune to these variations since it relies on the differences between the frames rather than the appearance of the dart tip.
+Even with sufficient data, model robustness would still need to be validated across sensor resolutions, focal lengths, and lens distortions, all of which change the apparent dart-tip shape. The chosen classical pipeline is less sensitive to appearance variation because it relies primarily on temporal change and geometric constraints rather than learned visual features.
 
 \subsection{Multi-Camera Systems}
 
 \subsubsection{Accuracy Improvements}
-Using two cameras with distinct angles of view would allow us to accurately locate the dart tip in three dimensions and remove the ambiguity of depth found with single-camera projection. This would improve robustness to occlusion since if the dart tip is occluded by the board for one camera, it would be visible to the second. While accuracy improvements would be substantial for competitive or commercial applications, they are considered unnecessary for the recreational scenario targeted by this project.
+A two-camera setup could triangulate impact position in three dimensions and reduce ambiguity from single-view projection. It would also improve resilience to partial occlusion. However, this additional accuracy is not essential for the recreational scenario targeted in this thesis.
 
 \subsubsection{Calibration Overhead}
-In addition to the individual intrinsic camera calibrations for each camera, the two-camera approach would also require stereo camera extrinsic calibration to find the relative orientation between cameras. This would be more prone to errors due to mechanical instability between cameras since any flexing of the camera mounting would cause a baseline error, which would be directly propagated to the accuracy of the triangulated coordinates.
+Beyond per-camera intrinsic calibration, a stereo configuration requires stable extrinsic calibration between both cameras. Small mechanical shifts in mounts introduce baseline errors that directly degrade triangulation accuracy. This increases setup complexity and maintenance effort relative to a single-camera installation.
 
 \section{Technology Selection Rationale}
 
 \subsection{Justification for the Chosen Stack}
 
 \subsubsection{Alignment with Project Objectives}
-The choice of Python, OpenCV, NumPy, and ArUco-based calibration was driven by a desire to meet specific project objectives without incurring unnecessary dependencies. The choice of OpenCV gives us primitives for calibration, homography, and contour analysis that underlie the entire process; NumPy ensures efficient inter-primitive data transfer without incurring copy penalties; ArUco eliminates the need for manual calibration in each session, which is a requirement of a permanent installation; and Python brings all of this together in a manner that is both maintainable and easily instrumented. The chosen stack works out of the box without modification on both Linux and Windows, thereby covering all required deployment scenarios, and does not require additional hardware of any kind other than the camera itself.
+The selected stack was chosen to satisfy real-time performance, low-cost deployment, and maintainability with minimal hardware assumptions. OpenCV provides the required primitives for calibration, homography, thresholding, and contour analysis, while NumPy enables efficient numeric operations on shared array structures. Python provides rapid iteration and sufficient runtime performance because compute-intensive operations execute in compiled OpenCV routines. ArUco-based calibration supports repeatable setup in fixed installations, and the complete stack runs on Linux and Windows without specialized hardware beyond a standard camera.

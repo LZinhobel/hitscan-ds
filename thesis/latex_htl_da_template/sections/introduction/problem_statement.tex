@@ -1,11 +1,9 @@
 \section{Problem Statement}
 
-This thesis addresses the problem of developing a low-cost and accessible automatic scoring system for a traditional steel-tip dartboard. The goal is to connect the physical game with digital processing while keeping the required hardware minimal. The entire application is designed to operate using only a single camera, allowing easy installation in private environments without specialized equipment.
+This thesis is aimed at developing an automatic scoring system for the traditional steel tip dartboard. The system is designed to ensure that the physical nature of the dartboard is linked to the digital nature of the computer system while at the same time ensuring that the system is simple in terms of the hardware used. The entire system is designed to work with just one camera. Such a system is highly suitable for use in the home environment as it does not require any specialized equipment.
 
-\subsection{Requirements for an Automatic Detection System}
+\paragraph{Real-Time Detection.}
 
-\subsubsection{Real-Time Detection}
+In terms of practical usability, it should be able to detect these hits and display the updated score with minimal delay. Excessive delay would break the natural flow of the game and hinder usability. Thus, the delay between the dart landing and the display of the updated score should be well below a few seconds.
 
-For practical use, the system must detect hits and update the score almost immediately. Noticeable delays would interrupt the natural flow of the game and reduce usability. Therefore, the processing time from dart impact to score display should remain well below a few seconds.
-
-This requirement limits both the algorithms and the hardware that can be used. The image processing pipeline must efficiently analyze a continuous video stream and reliably detect when a dart lands. After detection, the system must determine which dart caused the change, calculate the score, and update the interface quickly enough that players perceive the reaction as instantaneous.
+This constraint will affect the algorithm and hardware used. The image processing algorithm should be efficient and analyze the video stream to detect the dart landing. Once the landing has been detected, it should be able to identify which dart landed and calculate the resulting score with minimal delay to be considered instantaneous to the player.

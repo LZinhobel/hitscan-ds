@@ -34,6 +34,14 @@
 \makeglossaries
 \begin{document}
 \bstctlcite{IEEEexample:BSTcontrol}
+
+\IfStrEq{\thesislang}{de}
+{
+  \selectlanguage{ngerman}
+}
+{
+  \selectlanguage{english}
+}
 \newcommand{\reminder}[1]
 { \textcolor{red}{<[{\bf\marginpar{\mbox{$<==$}} #1 }]>} }
 \newcommand{\icode}[1]{\lstinline$#1$}
@@ -106,29 +114,14 @@
 \input{glossary}
 \glsnogroupskiptrue
 
-\IfStrEq{\thesislang}{de}
-{
-	\printglossary[title=Glossar,toctitle=Glossar] %,style=long]
-}
-{
-	\printglossary[title=Glossary,toctitle=Glossary] %,style=long]
-}
+\printglossary[title=Glossary,toctitle=Glossary] %,style=long]
 
-\spacing{1}{
+\begin{spacing}{1}
 \newpage
-
-\IfStrEq{\thesislang}{de}
-{
-	\addchap{Literaturverzeichnis}
-	\bibliographystyle{ieeetrande}
-}
-{
-	\addchap{References}
-	\bibliographystyle{IEEEtran}
-}
+\bibliographystyle{IEEEtran}
 
 \bibliography{bib}
-}
+\end{spacing}
 
 \newpage
 \listoffigures
@@ -137,13 +130,7 @@
 
 \appendix
 
-\IfStrEq{\thesislang}{de}
-{
-	\addchap{Anhang}
-}
-{
-	\addchap{Appendix}
-}
+\addchap{Appendix}
 
 \input{./sections/appendix}
 

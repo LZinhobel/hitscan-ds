@@ -1,11 +1,9 @@
 \section{Project Scope}
 
-\subsection{System Constraints}
+\subsection{Low-Cost Design}
 
-\subsubsection{Low-Cost Design}
+The first constraint of the system is its cost. The solution should remain substantially cheaper than existing automatic scoring systems and therefore rely on off-the-shelf consumer hardware. It should run on readily available devices such as a Raspberry Pi or a standard home computer without requiring dedicated accelerators or specialized sensing equipment.
 
-The first constraint of the system is its cost. The system should be much cheaper than existing automatic dartboard scoring systems and thus be comprised of off-the-shelf consumer electronics. The software should run on consumer-level devices such as the Raspberry Pi or a standard home computer without the need for additional processing units. The system should be affordable for the average consumer and, if possible, be built with materials found within the average household and a standard webcam they may already own to minimize the need for additional construction materials and equipment.
+\subsection{Single-Camera Setup}
 
-\subsubsection{Single-Camera Setup}
-
-In order to further minimize the overall cost and construction time of the system, it will be designed to use a single camera. This has the added problem of being a computer vision problem since the 3D dart landing must be determined by analyzing the 2D video feed. This means the camera must be positioned so the dartboard is fully visible and the dart landing on it will cause minimal occlusion. This constraint will be the basis of the thesis and will be used to determine what information can be extracted from the video feed to determine dart landing and calculate scores.
+To further limit cost and setup complexity, the system is restricted to a single-camera configuration. This scope decision imposes visibility constraints on the solution: the dartboard must remain fully visible, and the camera position must minimize occlusion at the moment of impact. The thesis therefore focuses on what can be inferred reliably from one two-dimensional video stream.

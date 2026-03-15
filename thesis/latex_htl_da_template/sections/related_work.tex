@@ -58,8 +58,8 @@ After the camera has been calibrated, the majority of the systems make use of a 
 
 \subsubsection{Hardware Differences}
 
-The existing approaches make use of either expensive multi-camera hardware or specialized sensor hardware. In contrast, the present work relies on the single camera hardware found on consumer devices, along with passive markers on the board. In comparison with the stereo vision-based approach presented in \cite{Hartley2004}, the present work avoids the need for multi-view camera calibration. In comparison with the vibration-based approach presented in \cite{Schwingshackl2010}, the present work avoids the need for board material or mounting conditions.
+The reviewed approaches show a clear tradeoff between hardware complexity and robustness. Multi-camera systems improve spatial observability, while sensor-based systems avoid image processing but introduce dependencies on board material and mounting conditions. These tradeoffs define the design space in which the present work is situated.
 
 \subsubsection{Novelty of a Motion-Threshold Pipeline}
 
-The present work makes use of motion segmentation, temporal thresholding, and geometric board modeling. In contrast to the existing machine learning-based approaches, the present work avoids the need for training data. Instead, the present work relies on classical computer vision techniques, such as background subtraction, as presented in \cite{Zivkovic2004}.
+Within that design space, classical computer vision remains a relevant alternative to learned detection pipelines. Prior work on motion segmentation, contour-based localization, and geometric board modeling indicates that a deterministic pipeline can remain viable when the scene is constrained and the object geometry is known. This motivates the methodological direction taken in the present work without repeating the detailed technology justification.

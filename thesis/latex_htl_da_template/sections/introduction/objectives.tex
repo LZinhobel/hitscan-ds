@@ -18,8 +18,8 @@ The developed application supports different versions of the game. Most commonly
 
 \subsubsection{Motion-Based Dart Recognition}
 
-The main problem is to recognize the moment a new dart is thrown, distinguishing it from those already in the board and static objects in the background. This is achieved through motion detection. By analyzing the difference between two consecutive frames in a video stream, it is possible to detect the moment a dart hits the target and the point it has come to rest at.
+The system must recognize when a new dart has struck the board, distinguish that event from the static scene, and determine the final hit position reliably enough for automatic scoring.
 
 \subsubsection{Manual and Marker-Based Calibration Concepts}
 
-In order to translate the image coordinates into the scoring regions, the need for a calibration process arises. Two methods are discussed for the purpose. First, the manual method of calibration, where the user is required to align the board landmarks such as the bullseye and the ring boundaries, is discussed. Secondly, the marker-based method, where augmented reality markers are placed on the board, is also discussed.
+The system requires a calibration procedure that maps image coordinates to dartboard scoring regions. Both a manual workflow and a marker-based workflow are considered so that the project can balance ease of setup against geometric accuracy.
