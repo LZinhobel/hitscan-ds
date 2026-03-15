@@ -202,3 +202,5 @@ package
 node_modules/
 .idea/*
 db.*
+
+code/debug
