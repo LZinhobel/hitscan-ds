@@ -286,16 +286,174 @@ if (tip is None or centroid is None) and isinstance(all_pts, np.ndarray) and all
 
 \section{Frontend and Visualization}
 
+\subsection{Web Application Architecture}
+
+\subsubsection{Technology Stack and Rationale}
+TODO: Describe the frontend framework, build tooling, state library (if used), and why these choices were made for a local-network, low-latency application.
+
+\subsubsection{Application Module Structure}
+TODO: Explain how the frontend codebase is organized (pages, reusable components, services, socket client, statistics module, calibration module).
+
+\subsubsection{Routing and Navigation Flow}
+TODO: Document the route structure and user flow between setup, game, statistics, and history screens.
+
+\begin{lstlisting}[numbers=left,caption=Suggested route map listing skeleton for Marvin to complete, label=lst:frontend_route_map]
+// TODO: Replace with real route declarations from frontend source
+// /setup
+// /game
+// /statistics
+// /history
+// /calibration
+\end{lstlisting}
+
 \subsection{Virtual Dartboard Design}
 
 \subsubsection{Rendering Strategy}
-TODO: ADD CONTENT HERE
+TODO: Explain how board overlays, hit highlights, and throw markers are rendered in the browser, including why this approach was preferred over alternatives.
+
+\subsubsection{Coordinate Mapping Between View and Backend}
+TODO: Describe how frontend canvas coordinates are transformed to/from backend coordinates and how scaling is handled on different screen sizes.
+
+\subsubsection{Visual Feedback and Error States}
+TODO: Explain visual indicators for valid hit, bust, invalid throw, disconnected backend, and calibration missing.
+
+\begin{table}[h]
+  \centering
+  \caption{UI feedback states to be documented by Marvin.}
+  \label{tab:ui_feedback_states_todo}
+  \begin{tabularx}{\linewidth}{@{}X X X@{}}
+    \toprule
+    \textbf{State} & \textbf{Current UI Behavior} & \textbf{User Impact} \\
+    \midrule
+    Valid hit & TODO & TODO \\
+    Bust & TODO & TODO \\
+    Miss / out-of-bounds & TODO & TODO \\
+    Backend disconnected & TODO & TODO \\
+    Calibration invalid/missing & TODO & TODO \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 
 \subsection{Game UI}
 
 \subsubsection{Real-Time State Synchronization}
-TODO: ADD CONTENT HERE
+TODO: Explain how websocket events are consumed and synchronized across multiple connected clients, including conflict handling and event ordering.
+
+\subsubsection{Responsive Layout Strategy}
+TODO: Describe layout adaptations for phone, tablet, and desktop and identify screen-space priorities for each.
+
+\subsubsection{Scoreboard Interaction Model}
+TODO: Explain turn progression UX, throw confirmation, undo, miss button behavior, and checkout visualization.
+
+\subsubsection{Input Validation and User Safeguards}
+TODO: Document safeguards against invalid game actions (double-submit, wrong player turn, invalid ruleset transitions).
+
+\begin{lstlisting}[numbers=left,caption=Suggested event/state flow skeleton for Marvin to replace with real implementation details, label=lst:frontend_event_flow_todo]
+// TODO: Replace with actual frontend event handling flow
+// websocket.on("dart_hit") -> validate active game/turn
+// -> apply game rule logic
+// -> persist throw
+// -> update local/remote state
+// -> render scoreboard and stats widgets
+\end{lstlisting}
+
+\subsection{Game Logic and State Management}
+
+\subsubsection{Ruleset Engine (301, 501, Double Out)}
+TODO: Explain frontend-side ruleset implementation details, including bust handling and winning-condition checks.
+
+\subsubsection{Turn Lifecycle and Throw Sequencing}
+TODO: Describe turn start/end transitions, throw counters, and handling of interrupted rounds.
+
+\subsubsection{State Persistence Boundaries}
+TODO: Define what state is ephemeral (UI-only) and what state is persisted to backend storage.
+
+\subsubsection{State Consistency Across Views}
+TODO: Explain how navigation between game/statistics/history screens preserves consistency without stale data artifacts.
+
+\begin{table}[h]
+  \centering
+  \caption{Ruleset/state edge cases Marvin should document and evaluate.}
+  \label{tab:ruleset_edge_cases_todo}
+  \begin{tabularx}{\linewidth}{@{}X X X@{}}
+    \toprule
+    \textbf{Scenario} & \textbf{Expected Behavior} & \textbf{Implementation Note} \\
+    \midrule
+    Bust on third dart & TODO & TODO \\
+    Checkout with Double Out enabled & TODO & TODO \\
+    Undo after bust sequence & TODO & TODO \\
+    Reconnect during active turn & TODO & TODO \\
+    Ruleset change mid-game & TODO & TODO \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Statistics and Persistence}
+
+\subsubsection{Data Model for Match History}
+TODO: Explain how frontend interacts with stored entities (games, players, throws, aggregated stats) and how schema design supports statistics queries.
+
+\subsubsection{Statistics Computation Pipeline}
+TODO: Describe where and how metrics are computed (frontend/backend split), and discuss consistency/performance tradeoffs.
+
+\subsubsection{Statistics Views and Interpretation}
+TODO: Document each player-facing metric (per-dart average, checkout percentage, trend charts, segment performance).
+
+\subsubsection{Error Handling for Missing/Corrupt Historical Data}
+TODO: Explain fallback UI states when statistics cannot be computed due to incomplete persistence records.
+
+\begin{lstlisting}[numbers=left,caption=Suggested statistics section outline Marvin can replace with real formulas and queries, label=lst:stats_outline_todo]
+// TODO: Replace with actual implementation specifics
+// metric_1: per-dart average
+// metric_2: first-9 average
+// metric_3: checkout success rate
+// metric_4: score distribution by segment
+\end{lstlisting}
+
+\subsection{Usability and UX Validation}
+
+\subsubsection{Prototype-to-Implementation Transition}
+TODO: Explain how wireframes/mockups evolved into production UI and what changed after user feedback.
+
+\subsubsection{Usability Feedback Sessions}
+TODO: Summarize feedback methodology (participants, tasks, metrics) and top findings.
+
+\subsubsection{Accessibility and Readability Considerations}
+TODO: Discuss text sizes, contrast, color choices, and interaction affordances for fast-paced game contexts.
+
+\subsubsection{Known UX Limitations and Future Improvements}
+TODO: Capture open UX issues and realistic next improvements.
+
+\subsection{Milestone Implementation Narrative}
+
+\subsubsection{Design Prototype Completed (09.07.2025)}
+TODO: Document delivered wireframes/mockups, design decisions, and key changes from feedback rounds.
+
+\subsubsection{Initial Game Logic Completed (16.07.2025)}
+TODO: Describe first stable ruleset implementation and how correctness was validated before vision integration.
+
+\subsubsection{Game Persistence Implemented (21.07.2025)}
+TODO: Explain persistence implementation details and migration from transient state to durable records.
+
+\subsubsection{Statistical Evaluation Completed (04.08.2025)}
+TODO: Describe final stats features and how they use stored game data.
+
+\begin{table}[h]
+  \centering
+  \caption{Milestone evidence checklist for Marvin's chapter expansion.}
+  \label{tab:frontend_milestone_evidence_todo}
+  \begin{tabularx}{\linewidth}{@{}X X X@{}}
+    \toprule
+    \textbf{Milestone} & \textbf{Evidence Artifact} & \textbf{Section Reference} \\
+    \midrule
+    Design prototype & TODO (screenshots/mockup files) & TODO \\
+    Initial game logic & TODO (ruleset tests/code excerpts) & TODO \\
+    Persistence implementation & TODO (schema + API samples) & TODO \\
+    Statistical evaluation & TODO (charts + computation notes) & TODO \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
 
 \setauthor{\secondauthor}
 
