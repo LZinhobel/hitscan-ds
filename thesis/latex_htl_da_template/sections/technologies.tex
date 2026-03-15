@@ -10,6 +10,13 @@ The entire process from capture, through preprocessing, motion detection, blob e
 \subsubsection{Pipeline Responsiveness}
 The responsiveness of the pipeline is maintained by making the more expensive operations dependent on the results obtained from the less expensive operations. Capture of the frame and the differencing operation are performed unconditionally on every frame. Subpixel tip detection, perspective correction, and sector assignment are performed on every frame, provided the differencing operation indicates motion greater than the specified threshold.
 
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.98\linewidth]{pics/generated/system_pipeline.png}
+	\caption{Implementation-level architecture of the single-camera detection and scoring pipeline.}
+	\label{fig:system_pipeline_architecture}
+\end{figure}
+
 
 \subsection{Hardware Constraints}
 
@@ -39,6 +46,23 @@ The interpreter imposes a certain overhead on the execution of the Python byteco
 
 \subsubsection{Performance Considerations}
 The primary optimization performed in the project was the implementation of the region of interest cropping. By limiting the processing to the region of the image where the dartboard is, the amount of pixels processed was reduced by about 60 to 70 percent compared to the full frame \cite{Viola2001}. Additionally, the output buffers are pre-filled and passed to the OpenCV in-place operations, which avoids the heap allocation overhead. In the case where the early exit is taken and no motion is detected, the pipeline completes very quickly, in less than 10 milliseconds on typical hardware, which leaves plenty of time for the user interface thread.
+
+\begin{table}[h]
+	\centering
+	\caption{Approximate per-stage runtime budget interpretation for practical operation.}
+	\label{tab:runtime_budget}
+	\begin{tabularx}{\linewidth}{@{}X X X@{}}
+		\toprule
+		\textbf{Pipeline Stage} & \textbf{Typical Cost Class} & \textbf{Optimization Used} \\
+		\midrule
+		Frame acquisition + grayscale conversion & Low & Direct OpenCV capture path \\
+		Differencing + thresholding + morphology & Medium & ROI restriction and in-place operations \\
+		Contour extraction + tip estimation & Medium & Early exit when no motion is present \\
+		Score mapping + event emission & Low & Lightweight geometric classification \\
+		Overlay/debug composition & Low to Medium & Performed after detection commitment \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
 
 \section{Computer Vision Framework}
 
@@ -83,6 +107,22 @@ ArUco calibration requires the user to place four markers and attach them to the
 \subsubsection{Robustness in Real Environments}
 Based on the experiments performed, it was found that the ArUco method of calibration was more reliable and consistent with regard to the assignment of each sector between sessions since it takes into consideration the homography to correct for perspective distortion. The manual method would gradually accumulate error depending on the accuracy of the clicks and would not compensate for perspective problems. Although under controlled conditions the accuracy of the ArUco and manual method of calculating the homography would be nearly equivalent with regard to the accuracy of the points scored by each method, under less than optimal camera angles with regard to the board, the homography method would clearly produce fewer errors with regard to the correct classification of adjacent segments along the board boundaries.
 
+\begin{table}[h]
+	\centering
+	\caption{Operational comparison of calibration strategies in this project.}
+	\label{tab:calibration_strategy_comparison}
+	\begin{tabularx}{\linewidth}{@{}X X X@{}}
+		\toprule
+		\textbf{Criterion} & \textbf{Manual Calibration} & \textbf{ArUco Calibration} \\
+		\midrule
+		Initial setup effort & Low hardware, higher interactive effort & Marker placement required once \\
+		Repeatability across sessions & Moderate, click-dependent & High, marker pose-dependent \\
+		Perspective compensation quality & Limited in oblique views & Strong through homography estimation \\
+		Best fit scenario & Ad hoc temporary setups & Fixed or semi-permanent installations \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
 \section{Motion Detection Techniques}
 
 \subsection{Frame Differencing}
@@ -115,6 +155,31 @@ describe the outline of each region in the image.
 
 \subsubsection{Filtering of Irrelevant Regions}
 The candidate regions are filtered through four different filters before any tip coordinates are calculated. The first filter is area; regions with an area smaller than the empirically derived minimum or larger than the maximum possible cross-section are discarded. The second filter is the aspect ratio; highly elongated shapes are not likely to be the dart tip viewed from the top. The third filter is the solidity of the shape, defined as the area enclosed by the contour divided by the area of the convex hull. Irregular shapes due to reflections or the cables have lower solidity values. The fourth filter is the spatial location; regions with centroids outside the known board region are not processed further. The number of regions remaining at this stage for each frame is zero or one or very rarely two, for the tip localization to take place.
+
+\begin{table}[h]
+	\centering
+	\caption{Key detector parameters and operational role.}
+	\label{tab:detector_parameters}
+	\begin{tabularx}{\linewidth}{@{}X X X@{}}
+		\toprule
+		\textbf{Parameter} & \textbf{Role in Pipeline} & \textbf{Tradeoff Direction} \\
+		\midrule
+		Motion threshold & Separates background variation from candidate foreground & Higher values reduce noise but risk missed weak impacts \\
+		Minimum blob area & Rejects tiny artifacts and sensor noise & Higher values improve precision but can remove valid small tips \\
+		Morphology kernels & Connect fragmented dart regions before contouring & Larger kernels improve continuity but can over-merge nearby regions \\
+		Still-time gate & Waits for stable post-impact frame before analysis & Longer gating reduces blur artifacts but increases response delay \\
+		Known-dart suppression radius & Avoids repeated detection of already lodged darts & Larger radius reduces duplicates but may hide nearby new impacts \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+\begin{lstlisting}[numbers=left,caption=Parameter tuning strategy used during detector stabilization, label=lst:parameter_tuning_strategy]
+1. Start from conservative threshold and high min-blob area.
+2. Verify no false triggers on static board for several seconds.
+3. Lower threshold until weak impacts become visible in mask.
+4. Re-tune morphology to reconnect fragmented dart regions.
+5. Validate edge and out-of-bounds throws before locking values.
+\end{lstlisting}
 
 \section{Frontend and Visualization Technologies}
 

@@ -5,3 +5,19 @@ The project will adopt an iterative development approach. First, the minimal via
 
 \subsection{Evaluation and Refinement Cycles}
 The project will undergo various refinement cycles. Each subsystem, such as the vision, game logic, and interface, will be individually implemented and tested against the requirements. The feedback from the testing process will directly influence the subsequent phases of the project, resulting in the creation of a robust, user-friendly interface, as discussed in the project timeline.
+
+\subsection{Methodological Workflow}
+
+The development process used an iterative measure and adjust cycle instead of a linear one-shot approach to development. In each cycle, a specific major uncertainty was identified (for instance, thresholds' stability, calibrations' repeatability, and camera angles' sensitivity), isolated through specific tests, and incorporated only after verifying its acceptable behavior.
+
+\begin{lstlisting}[numbers=left,caption=Iteration loop applied throughout development, label=lst:method_iteration_loop]
+Cycle Input: one unstable system behavior
+1.  Define the expected behavior and a corresponding measurable metric.
+2.  Instrument and debug the corresponding stage (for instance, saved masks, contours, and tip output).
+3.  Modify one parameter group at a time.
+4.  Re-run specific controlled throw tests (center, edge, out-of-bounds).
+5.  Log the behavior and decide to commit or revert the modification.
+6.  Integrate only when no regression is seen on previously stable behavior.
+\end{lstlisting}
+
+This approach reduced the risk of "regressions" where improvements to one component of the system's detection pipeline might have a negative impact on another component when tested under different lighting, angle, and/or calibration conditions.

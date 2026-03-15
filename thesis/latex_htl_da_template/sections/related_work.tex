@@ -14,6 +14,21 @@ The technical capabilities of the system require the setup of multiple camera sy
 
 Thus, the system setup is quite complex. The system is quite expensive. Thus, the system is not suitable for personal use. The complexity of the system setup is the reason for the need for alternative systems that are based on the use of a single camera system.
 
+\begin{table}[h]
+	\centering
+	\caption{Comparative overview of dominant automatic scoring approach families.}
+	\label{tab:related_work_comparison}
+	\begin{tabularx}{\linewidth}{@{}X X X X@{}}
+		\toprule
+		\textbf{Approach} & \textbf{Primary Strength} & \textbf{Primary Weakness} & \textbf{Consumer Suitability} \\
+		\midrule
+		Multi-camera vision systems & High spatial observability and strong occlusion robustness & High setup/calibration complexity and high hardware cost & Low \\
+		Sensor or laser-based systems & Fast event triggering and reduced image-processing load & Material/mount dependency and limited visual verification & Medium \\
+		Single-camera classical CV (this work) & Low cost, maintainable stack, no training data dependency & Boundary sensitivity and bounce-out limitations & High \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
 \subsection{Laser and Sensor-Based Systems}
 
 \subsubsection{Hardware Dependencies}
@@ -63,3 +78,26 @@ The reviewed approaches show a clear tradeoff between hardware complexity and ro
 \subsubsection{Novelty of a Motion-Threshold Pipeline}
 
 Within that design space, classical computer vision remains a relevant alternative to learned detection pipelines. Prior work on motion segmentation, contour-based localization, and geometric board modeling indicates that a deterministic pipeline can remain viable when the scene is constrained and the object geometry is known. This motivates the methodological direction taken in the present work without repeating the detailed technology justification.
+
+\subsection{Comparative Decision Criteria}
+
+Beyond pure detection accuracy, practical deployment requires balancing setup burden, interpretability, and maintenance overhead.
+
+\begin{table}[h]
+	\centering
+	\caption{Qualitative decision matrix used to position the chosen approach.}
+	\label{tab:related_work_decision_matrix}
+	\begin{tabularx}{\linewidth}{@{}X c c c c c@{}}
+		\toprule
+		\textbf{Criterion} & \textbf{Multi-Cam} & \textbf{Sensor/Laser} & \textbf{ML Vision} & \textbf{Classical CV} & \textbf{Priority in This Thesis} \\
+		\midrule
+		Hardware cost & Low & Medium & Medium & High & High \\
+		Installation simplicity & Low & Medium & Medium & High & High \\
+		Model/data dependency & High & High & Low & High & High \\
+		Explainability/debuggability & Medium & Medium & Low & High & High \\
+		Recreational-home fit & Low & Medium & Medium & High & High \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+The matrix highlights why a deterministic single-camera pipeline was selected. It does not maximize every individual metric, but it aligns best with the objective profile of low-cost recreational deployment under constrained hardware.

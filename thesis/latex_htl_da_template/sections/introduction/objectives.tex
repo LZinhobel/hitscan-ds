@@ -23,3 +23,36 @@ The system must recognize when a new dart has struck the board, distinguish that
 \subsubsection{Manual and Marker-Based Calibration Concepts}
 
 The system requires a calibration procedure that maps image coordinates to dartboard scoring regions. Both a manual workflow and a marker-based workflow are considered so that the project can balance ease of setup against geometric accuracy.
+
+\subsection{Objective Traceability}
+
+To ensure methodological consistency, each of the high-level objectives was carefully matched with the technical mechanisms supporting it and then validated in the evaluation chapter.
+
+\begin{table}[h]
+	\centering
+	\caption{Traceability from objectives to implementation mechanisms and evaluation evidence.}
+	\label{tab:objective_traceability}
+	\begin{tabularx}{\linewidth}{@{}X X X@{}}
+		\toprule
+		\textbf{Objective} & \textbf{Implementation Mechanism} & \textbf{Evaluation Evidence} \\
+		\midrule
+		Automatic hit detection & Motion threshold pipeline with contour-based tip estimation & Sector-level accuracy and failure analysis in evaluation chapter \\
+		Real-time score feedback & Backend event emission and frontend state update through websocket & Practical responsiveness observations during play sessions \\
+		Reliable board mapping & Manual/marker calibration and coordinate transformation & Calibration-related error categories and boundary behavior analysis \\
+		Low-cost accessibility & Single-camera, CPU-only classical CV pipeline & Feasibility on consumer hardware without dedicated accelerators \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+\subsection{Acceptance Criteria Snapshot}
+
+The following minimum acceptance criteria were used as a practical checklist during the iterative development cycles.
+
+\begin{lstlisting}[numbers=left,caption=Practical acceptance checklist used during iterative testing, label=lst:acceptance_checklist]
+1. Full board remains visible in camera frame under chosen mount.
+2. Calibration can be completed and persisted without manual file edits.
+3. New dart impact triggers a valid websocket hit event.
+4. Detected hit maps to a ring-sector result consumable by game logic.
+5. Scoreboard updates without user-side refresh or manual score input.
+6. Pipeline remains usable under stable indoor lighting and typical throws.
+\end{lstlisting}

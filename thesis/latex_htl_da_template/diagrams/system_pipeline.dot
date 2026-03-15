@@ -1,0 +1,19 @@
+digraph G {
+  rankdir=LR;
+  graph [fontsize=12, fontname="Helvetica", labelloc="t", label="Single-Camera Detection and Scoring Architecture"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#333333", fillcolor="#eef5ff"];
+  edge [color="#555555", arrowsize=0.8];
+
+  cam [label="USB Camera\n(1920x1080 @ 26 FPS)"];
+  pre [label="Preprocessing\nblur, differencing, threshold"];
+  blob [label="Blob/Contour Stage\nfilter + merge"];
+  tip [label="Tip Estimation\nconvex hull + fallback"];
+  cls [label="Score Classification\nring + sector mapping"];
+  ws [label="WebSocket Event\ndart_hit"];
+  ui [label="Frontend UI\nscoreboard + game state"];
+  db [label="Persistence\ngames + throws + stats"];
+
+  cam -> pre -> blob -> tip -> cls -> ws -> ui;
+  ui -> db;
+  cls -> db [style=dashed, label="optional debug/log path", fontsize=9];
+}

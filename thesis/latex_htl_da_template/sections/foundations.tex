@@ -36,6 +36,13 @@ The dartboard is planar, so the projective transformation is used to map the ima
 
 During calibration, reference points on the board are matched with their image positions. This correspondence defines a mapping from camera pixels to board coordinates, allowing later detections to be interpreted in the dartboard reference frame \cite{Hartley2004}.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.78\linewidth]{pics/generated/coordinate_mapping.png}
+    \caption{Conceptual mapping chain from camera pixels to final score token.}
+    \label{fig:coordinate_mapping_chain}
+\end{figure}
+
 \section{Dartboard Geometry}
 
 \subsection{Ring and Sector Structure}
@@ -58,6 +65,22 @@ The camera provides a position in pixel space. This is a function of the camera'
 
 After calibration, detected points can be represented in a normalized board coordinate system that is independent of the raw image perspective.
 
+\begin{table}[h]
+    \centering
+    \caption{Coordinate representations used across scoring stages.}
+    \label{tab:coordinate_spaces}
+    \begin{tabularx}{\linewidth}{@{}X X X@{}}
+        \toprule
+        \textbf{Space} & \textbf{Typical Variables} & \textbf{Purpose} \\
+        \midrule
+        Pixel space & $(x, y)$ & Raw sensor-domain localization output \\
+        Board-normalized planar space & $(x_n, y_n)$ & Perspective-independent geometric reasoning \\
+        Polar board space & $(r, \theta)$ & Direct ring/sector decision mapping \\
+        Symbolic scoring space & \texttt{S20}, \texttt{D16}, \texttt{T19}, \texttt{25}, \texttt{50} & Game-rule compatible hit representation \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
 \section{Principles of Motion Detection and Object Tracking}
 
 \subsection{Frame Differencing}
@@ -79,3 +102,22 @@ After frame differencing isolates moving regions, contour extraction describes t
 \subsubsection{Filtering Strategies}
 
 Filtering suppresses noise and removes implausible regions before further localization is attempted.
+
+\subsection{Boundary Sensitivity Considerations}
+
+In a discretized scoring model, localization errors are most harmful near sector and ring boundaries. A small perturbation in estimated tip position can produce a categorical score jump, even if Euclidean displacement is small.
+
+\begin{lstlisting}[numbers=left,caption=Boundary sensitivity intuition in discrete scoring systems, label=lst:boundary_sensitivity]
+Given estimated tip p = (x, y) and decision regions R_i:
+
+score(p) = i  if p in R_i
+
+Near boundary B_ij between R_i and R_j:
+small ||delta p|| can flip score(p + delta p) from i to j.
+
+Implication:
+Localization robustness must be evaluated categorically (correct region)
+and not only by geometric distance error.
+\end{lstlisting}
+
+This property motivates both stable calibration and conservative filtering strategies in the implementation.

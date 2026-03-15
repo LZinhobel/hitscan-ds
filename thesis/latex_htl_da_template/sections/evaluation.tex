@@ -1,55 +1,189 @@
+\setauthor{\secondauthor}
 
 \section{Test Environment}
 \subsection{Lighting Conditions}
 
 \subsubsection{Shadow and Reflection Impact}
-TODO: ADD CONTENT HERE
+Lighting was also recognized as a key factor to ensure proper detection. Experiments were performed to identify how shadows cast by dart shafts and the person throwing created unstable contour shapes and periodic false motion areas. The problem was addressed by adding a light ring around the dartboard. This provided a more uniform light distribution on the dartboard surface while reducing directional shadows considerably.
+
+Under this new lighting condition, contour detection was more stable during successive throws, especially around areas close to ring boundaries where small variations in lighting would normally cause variations in tip position. Errors observed under this new lighting condition were mainly due to calibration issues.
 
 
 \subsection{Camera Setup}
 
 \subsubsection{Distance, Angle, and FPS}
-TODO: ADD CONTENT HERE
+All evaluation runs were performed with the following camera configuration:
+
+\begin{itemize}
+	\item Webcam model: UGREEN Camera 4K
+	\item Resolution: $1920 \times 1080$ (FHD)
+	\item Effective frame rate during testing: 26 FPS
+	\item Stream mode: RGB video
+	\item Approximate field setup: camera angle $\approx 50^{\circ}$, camera distance $\approx 60\,\mathrm{cm}$
+\end{itemize}
+
+Other camera characteristics that were noted during the setup process were the image size, which was 2.07 MP and the aspect ratio, which was 1.78. Also the average brightness level, which was around 46\% and the low saturation level of 2.59\%.
+
+The camera distance was not based on any specific geometric constraint but rather on the ability of the image to contain the entire dartboard while at the same time maximizing the board occupancy in the image. This was justified since increasing the camera distances reduces the pixel detail at the tip of the contour.
+
+\begin{table}[h]
+	\centering
+	\caption{Evaluation setup sheet used for repeatable test sessions.}
+	\label{tab:evaluation_setup_sheet}
+	\begin{tabularx}{\linewidth}{@{}X X@{}}
+		\toprule
+		\textbf{Parameter} & \textbf{Configured Value} \\
+		\midrule
+		Camera model & UGREEN Camera 4K \\
+		Resolution & $1920 \times 1080$ \\
+		Effective frame rate & 26 FPS \\
+		Camera angle & approximately $50^{\circ}$ \\
+		Camera distance & approximately $60\,\mathrm{cm}$ \\
+		Illumination strategy & Ring light around board to suppress directional shadows \\
+		Primary evaluation goal & Stable sector classification under practical throw scenarios \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+\begin{figure}[h]
+	\centering
+	\fbox{\parbox{0.92\linewidth}{
+		\textbf{Image slot suggestion: physical test setup photo.}\\
+		Capture a wide-angle image showing:
+		\begin{itemize}
+			\item full dartboard,
+			\item ring light placement,
+			\item camera position with measured $\approx 60\,\mathrm{cm}$ distance,
+			\item approximate viewing angle annotation ($\approx 50^{\circ}$).
+		\end{itemize}
+	}}
+	\caption{Placeholder for physical evaluation setup documentation photo.}
+	\label{fig:evaluation_setup_placeholder}
+\end{figure}
 
 
 \section{Evaluation Metrics}
 \subsection{Hit Position Error}
 
 \subsubsection{Millimeter Deviation}
-TODO: ADD CONTENT HERE
+The system that has been implemented maps the identified tip coordinate location onto the ring sector region in order to classify the hit location, and as such, the most obvious manifestation of the error that the system might make in practice is at the region boundaries. Rather than using the millimeter error value that might be experienced in the system, the evaluation focused more on the ability of the localization system to stay within the correct region for scoring purposes in practice.
+
+Qualitatively, the robustness of the system was observed in the impacts made at the center and the mid sector regions. The most prominent localization uncertainty was observed in the near-boundary throws, where the minor contour shift can cause the tip location to switch from one sector region to another. This behavior can be attributed to the single-camera projection system, where minor distortions and contour variations have the most significant impact near the decision boundaries.
 
 
 \subsection{Sector Classification Accuracy}
 
 \subsubsection{False Positive Rate}
-TODO: ADD CONTENT HERE
+Across extensive practical throwing sessions (including central hits, boundary-near hits, and out-of-board throws), the system achieved approximately 80\% sector-level classification accuracy.
 
+Most misclassifications belonged to one of three categories:
+
+\begin{itemize}
+	\item Calibration drift or poor calibration quality, causing systematic sector offset.
+	\item Boundary ambiguity when a large contour intersects a sector edge, producing unstable assignment between adjacent sectors.
+	\item Vibration-related global motion when the camera mount couples mechanically to the board.
+\end{itemize}
+
+The first two categories provided results that, although incorrect, were reasonable within a neighboring area rather than arbitrary data, which further reinforces the proximity of the localization to the actual impact location.
+
+\begin{table}[h]
+	\centering
+	\caption{Observed practical outcome classes during evaluation sessions.}
+	\label{tab:observed_outcome_classes}
+	\begin{tabularx}{\linewidth}{@{}X c X@{}}
+		\toprule
+		\textbf{Outcome Class} & \textbf{Relative Frequency} & \textbf{Typical Cause} \\
+		\midrule
+		Correct sector assignment & High & Stable calibration and clean contour extraction \\
+		Neighbor-sector misclassification & Medium & Boundary ambiguity and contour edge expansion \\
+		Missed hit event & Low to Medium & Camera vibration or insufficient stable post-impact contour \\
+		Correctly ignored non-hit event & Medium & Out-of-bounds throw or no persistent board impact \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
 
 \section{Edge Case Analysis}
 
 \subsection{Bounce-Outs}
-TODO: ADD CONTENT HERE
+It is not possible to detect these with the current pipeline. The detector assumes that a valid throw results in a newly static object on the board. If a dart bounces off a metal area or touches a dart and then is thrown off, then no final static contour exists, so it is not considered a valid dart.
+
+This is a known methodological limitation as opposed to a programming error. The development of a proper bounce-out detector would require further event modeling, sound/vibration detection, or multi-angle verification.
 
 \subsection{Occluded Darts}
-TODO: ADD CONTENT HERE
+Extreme cases of occlusion were rare in the given board configuration but are relevant to a practical environment. If a new dart is thrown into an area close to an already-embedded dart, then contour union can cause a decrease in dart tip separability. The merged contour technique currently used is a significant enhancement to the algorithm to increase robustness to fragmented dart contours. However, it also has a potential to cause ambiguity between densely grouped darts.
+
+From an empirical standpoint, it was determined that these types of situations were most likely to cause issues with shots landing in near-adjacent segment areas rapidly fired in succession.
 
 \subsection{Motion Blur and Shadows}
-TODO: ADD CONTENT HERE
+Given a 26 FPS rate and ring light illumination, motion blur was not a significant factor in error rates, as the final state is stationary to register a point. However, sudden changes to global illumination or cast shadows can potentially cause issues with threshold determination.
 
+The ring light installation was a significant factor in minimizing potential issues. The few errors that occurred were due to camera vibrations.
 
-\section{Performance Evaluation}
-
-\subsection{Latency Measurements}
-TODO: ADD CONTENT HERE
-
-\subsection{CPU and GPU Load}
-TODO: ADD CONTENT HERE
-
+\begin{figure}[h]
+	\centering
+	\fbox{\parbox{0.92\linewidth}{
+		\textbf{Image slot suggestion: lighting comparison pair.}\\
+		Provide two board images with identical camera placement:
+		\begin{itemize}
+			\item left: without ring light (visible shaft shadows),
+			\item right: with ring light (uniform illumination).
+		\end{itemize}
+	}}
+	\caption{Placeholder for before/after lighting-condition comparison.}
+	\label{fig:lighting_comparison_placeholder}
+\end{figure}
 
 \section{Experimental Results}
 
 \subsection{Successful Detection Scenarios}
-TODO: ADD CONTENT HERE
+The strongest results were observed in the following scenarios:
+
+\begin{itemize}
+	\item Good calibration with stable camera geometry.
+	\item Uniform ring-light illumination with minimal cast shadows.
+	\item Camera placement that keeps the full board in frame while maximizing board scale.
+	\item Angle near the empirically chosen range ($\approx 45^{\circ}$ to $50^{\circ}$), balancing contour clarity and sector readability.
+\end{itemize}
+
+Under these conditions, the detector produced stable contour masks and consistent sector assignment across repeated throws.
 
 \subsection{Failure Scenarios}
-TODO: ADD CONTENT HERE
+Observed failures were repeatable and can be grouped as follows:
+
+\begin{itemize}
+	\item \textbf{Calibration error:} Incorrect ring/sector alignment shifts classifications into neighboring fields.
+	\item \textbf{Boundary ambiguity:} Large or irregular contours exactly on sector borders can flip between adjacent sectors.
+	\item \textbf{Bounce-out behavior:} Non-persistent impacts are not represented in the final static frame and are therefore missed.
+	\item \textbf{Mount vibration:} If the camera is mechanically coupled to board vibrations, global frame motion causes detector confusion and can suppress valid detections.
+\end{itemize}
+
+Overall, the evaluation confirms that the current pipeline is viable for recreational automatic scoring, with accuracy around 80\% in real-world play and clearly identified technical limitations for future improvement.
+
+\subsection{Reproducibility Checklist}
+
+To improve repeatability of future experiments, the following protocol was derived from the final evaluation setup.
+
+\begin{lstlisting}[numbers=left,caption=Minimal reproducibility protocol for future test repetitions, label=lst:evaluation_repro_protocol]
+1. Verify camera mount rigidity and fixed board alignment.
+2. Confirm ring-light operation and remove directional room light hotspots.
+3. Re-run calibration and save configuration before test session.
+4. Execute mixed throw set: center, near-edge, out-of-bounds, rapid succession.
+5. Log each mismatch under one of the defined failure categories.
+6. Re-test after any parameter adjustment to detect regressions.
+\end{lstlisting}
+
+\begin{table}[h]
+	\centering
+	\caption{Failure taxonomy used for structured error logging.}
+	\label{tab:failure_taxonomy}
+	\begin{tabularx}{\linewidth}{@{}X X@{}}
+		\toprule
+		\textbf{Category} & \textbf{Operational Description} \\
+		\midrule
+		Calibration error & Sector mapping offset due to inaccurate board reference alignment \\
+		Boundary ambiguity & Neighbor-sector flip for impacts exactly on ring/sector borders \\
+		Bounce-out limitation & No persistent contour remains after non-sticking impact \\
+		Vibration-induced instability & Mount/board coupling causes global frame motion and detector overload \\
+		\bottomrule
+	\end{tabularx}
+\end{table}

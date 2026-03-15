@@ -7,3 +7,25 @@ The first constraint of the system is its cost. The solution should remain subst
 \subsection{Single-Camera Setup}
 
 To further limit cost and setup complexity, the system is restricted to a single-camera configuration. This scope decision imposes visibility constraints on the solution: the dartboard must remain fully visible, and the camera position must minimize occlusion at the moment of impact. The thesis therefore focuses on what can be inferred reliably from one two-dimensional video stream.
+
+\subsection{Scope Boundaries}
+
+In order to clarify the ambiguity of expectations, the scope of the project was clearly defined, including the features to be included and the features to be excluded.
+
+\begin{table}[h]
+	\centering
+	\caption{In-scope and out-of-scope boundaries for this thesis.}
+	\label{tab:scope_boundaries}
+	\begin{tabularx}{\linewidth}{@{}X X@{}}
+		\toprule
+		\textbf{In Scope} & \textbf{Out of Scope} \\
+		\midrule
+		Single camera steel tip detection on consumer hardware, multiple camera 3D triangulation, and stereo reconstruction \\
+		Local network web interface with real-time score display, cloud-based user accounts, remote matchmaking, and social platform support \\
+		Calibration-assisted sector mapping, both manual and marker-based, and auto-bounce-out detection with guaranteed reliability \\
+		Core game modes, including 301/501 rules and standard checkout rules, and comprehensive support for all game variants, both casual and tournament-style \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+The definition of the scope of the project is critical to the interpretation of the results of the evaluation process. Certain failure modes, such as bounce-outs and complex occlusions, are considered to be a limitation of the architecture, not a regression against the specified requirements.

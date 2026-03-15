@@ -92,36 +92,200 @@ As previously mentioned, the calibration data is saved in the detection backend 
 
 On launch of the detection backend, we create a virtual canvas which contains the active camera feed and draw the calibration rings on top of it.
 
+\setauthor{\secondauthor}
 
 \section{Dart Detection}
 \subsection{Motion Threshold Pipeline}
 
 \subsubsection{Frame Differencing}
-TODO: ADD CONTENT HERE
+The detection backend employs frame subtraction with respect to a blurred background. The current frame is smoothed and compared to the stored background image by absolute difference. The output of this process is thresholded to generate a binary motion mask. This process is the first step in distinguishing between static board information and newly moving dart pixels.
+
+\begin{lstlisting}[numbers=left,caption=Frame differencing and motion update entry point, label=lst:detector_frame_diff]
+gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+blurred = cv2.GaussianBlur(gray, (9, 9), 0)
+
+if self.bg_frame is None:
+  self.bg_frame = blurred.copy()
+  return [], None, [], 0
+
+diff = cv2.absdiff(self.bg_frame, blurred)
+thresh = self._apply_filter_pipeline(diff)
+\end{lstlisting}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_01_input.png}
+    \caption{Input frame}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_02_diff_global.png}
+    \caption{Global difference}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_03_thresh_global.png}
+    \caption{Initial threshold mask}
+  \end{subfigure}
+  \caption{Frame differencing stage.}
+  \label{fig:dart_detection_diff_00062}
+\end{figure}
 
 \subsubsection{Mask Generation}
-TODO: ADD CONTENT HERE
+Subsequent to the differencing step, a fixed thresholding process is employed, where the threshold value can be adjusted using a trackbar. The resulting image is then subjected to morphological refinement, where two dilation and one erosion process take place. This is then followed by the proposed closing process that aims at joining disjointed regions that correspond to the foreground region of interest.
+
+\begin{lstlisting}[numbers=left,caption=Thresholding and morphology pipeline, label=lst:detector_mask_generation]
+def _apply_filter_pipeline(self, diff):
+  blur = cv2.GaussianBlur(diff, (5, 5), 0)
+  for i in range(10):
+    blur = cv2.GaussianBlur(blur, (9, 9), 1)
+  blur = cv2.bilateralFilter(blur, 9, 75, 75)
+  _, thresh = cv2.threshold(blur, self.motion_thresh, 255, 0)
+  return thresh
+
+thresh = cv2.dilate(thresh, None, iterations=2)
+thresh = cv2.erode(thresh, None, iterations=1)
+thresh = self._connect_dart_parts(thresh)
+\end{lstlisting}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_10_diff_input.png}
+    \caption{Diff input}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_11_blur_1.png}
+    \caption{Gaussian blur}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_13_bilateral.png}
+    \caption{Bilateral filter}
+  \end{subfigure}
+
+  \vspace{0.6em}
+
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_14_gray_pre_thresh.png}
+    \caption{Pre-threshold grayscale}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_15_thresh_raw.png}
+    \caption{Raw threshold}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.31\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_18_connected.png}
+    \caption{Connected mask}
+  \end{subfigure}
+
+  \caption{Mask-generation pipeline detail.}
+  \label{fig:dart_detection_mask_00062}
+\end{figure}
 
 
 \subsection{Blob Detection and Filtering}
 
 \subsubsection{Contour Operations}
-TODO: ADD CONTENT HERE
+Contours are extracted from the connected binary mask using \texttt{RETR\_EXTERNAL}, then filtered by minimum area and sorted by contour area. For robust tip estimation, all remaining contour points are merged and converted into one convex hull.
+
+\begin{lstlisting}[numbers=left,caption=Contour extraction and merge strategy, label=lst:detector_contours]
+contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours = [c for c in contours if cv2.contourArea(c) >= self.min_blob_area]
+contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+all_pts = np.vstack([c.reshape(-1, 2) for c in contours])
+all_pts = all_pts.astype(np.float32)
+merged_contour = cv2.convexHull(all_pts.reshape(-1, 1, 2))
+\end{lstlisting}
 
 \subsubsection{False Positive Reduction}
-TODO: ADD CONTENT HERE
+The process also reduces false positives by incorporating several checks, including an ignore mask outside the dartboard ellipse, a suppression area around previously detected dart locations, and a measure of temporal stability based on recent motion history. In cases of excessive global motion, such as camera shake, a reset is performed on the detector, which also updates the background model.
+
+\begin{lstlisting}[numbers=left,caption=False-positive suppression mechanisms, label=lst:detector_false_positive]
+if ignore_mask is not None and mask.any():
+  thresh = thresh.copy()
+  thresh[mask] = 0
+
+known_mask = np.ones_like(thresh) * 255
+for (x, y) in self.known_darts:
+  cv2.circle(known_mask, (int(x), int(y)), 12, (0,), -1)
+thresh = cv2.bitwise_and(thresh, thresh, mask=known_mask)
+
+if motion_level > 10000:
+  self.ready_to_analyze = False
+  self.bg_frame = blurred.copy()
+  self.known_darts.clear()
+  return [], thresh, contour_boxes, motion_level
+\end{lstlisting}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{0.47\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_04_largest_contours.png}
+    \caption{Largest contour candidates}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.47\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_05_final_tip.png}
+    \caption{Final tip decision}
+  \end{subfigure}
+  \caption{Contour filtering and final dart-tip localization.}
+  \label{fig:dart_detection_final_00062}
+\end{figure}
 
 
 \subsection{Dart Tip Estimation}
 
 \subsubsection{Vector Approximation}
-TODO: ADD CONTENT HERE
+The ultimate tip estimation is derived by a geometric approximation of the fused contour. To be specific, a convex hull is formed by all the contour points. The leftmost vertex of the convex hull is the candidate tip, with the centroid of the convex hull used as a plausibility reference. A directional criterion is applied to eliminate detections where the candidate is to the right of the centroid, removing a large number of mirrored shapes with this camera configuration.
+
+\begin{lstlisting}[numbers=left,caption=Tip estimation from merged contour geometry, label=lst:detector_tip_estimation]
+def _estimate_tip(contour, frame_debug=None):
+  hull = cv2.convexHull(contour)
+  pts = hull.reshape(-1, 2)
+  centroid = np.mean(pts, axis=0)
+  left_idx = np.argmin(pts[:, 0])
+  tip = tuple(pts[left_idx].astype(int))
+  return tip, centroid
+
+if tip is not None and centroid is not None:
+  if tip[0] >= centroid[0]:
+    return [], thresh, contour_boxes, motion_level
+\end{lstlisting}
 
 \subsubsection{Line Fitting Techniques}
-TODO: ADD CONTENT HERE
+The process of line fitting for the dart shaft was conceptually explored during the implementation process but was eventually dropped. From an implementation perspective, the use of the "merged contour" for the hull estimation was found to provide a more stable outcome under noisy board texture and fragmentation. The final version of the detector thus uses a contour-based fallback, rather than a line model, by selecting the leftmost point of the overall contour stack if the tip fails.
 
+\begin{lstlisting}[numbers=left,caption=Fallback strategy when hull-based tip extraction is unstable, label=lst:detector_tip_fallback]
+if (tip is None or centroid is None) and isinstance(all_pts, np.ndarray) and all_pts.shape[0] > 0:
+  left_idx = int(np.argmin(all_pts[:, 0]))
+  x = float(all_pts[left_idx, 0].tolist())
+  y = float(all_pts[left_idx, 1].tolist())
+  tip = (int(x), int(y))
+  centroid = np.mean(all_pts, axis=0)
+\end{lstlisting}
+
+\clearpage
+\setauthor{\firstauthor}
 
 \section{Frontend and Visualization}
+
 \subsection{Virtual Dartboard Design}
 
 \subsubsection{Rendering Strategy}
@@ -133,18 +297,29 @@ TODO: ADD CONTENT HERE
 \subsubsection{Real-Time State Synchronization}
 TODO: ADD CONTENT HERE
 
+\setauthor{\secondauthor}
 
 \section{Hardware Design}
 \subsection{Backboard Construction}
 
 \subsubsection{Material Selection}
-TODO: ADD CONTENT HERE
+The hardware prototype was envisioned as a mobile setup, which required the design of a stable yet portable support system for the dartboard as well as the camera. A wooden frame was thus selected. The rationale for the selection of the wooden frame was the availability of the material, cost effectiveness, as well as the rigidity of the material to ensure the relative positioning of the dartboard and camera during the repeated assembly and disassembly of the hardware prototype.
+
+For a stationary, permanent installation of the hardware prototype, the support structure is deemed unnecessary. The dartboard is stationary when it is mounted on the wall, as is the camera. The wooden frame thus employed is thus deemed necessary only for the purpose of the hardware prototype’s portability.
 
 
 \subsection{Camera Mounting}
 
+Two methods of camera mounting were considered. The first method is a fixed mount, which is fixed to the frame or a wall. The second method is a tripod mount. This allows faster deployment without having to design a custom mount.
+
+Regardless of which mounting strategy is used, an essential requirement is to ensure that the dartboard is fully contained within the captured image. The camera should be positioned to maximize coverage of the dartboard within the image. The board should not be cut off at the top or bottom. If the distance is too great, making the board too small within the image can cause difficulties in resolving details on the tip of the dart.
+
 \subsubsection{Angle Optimization}
-TODO: ADD CONTENT HERE
+Optimization of the angle selection process was carried out through empirical evaluation. It was observed that at very large lateral angles, the contour of the dart shaft tends to be more readily discernible; however, the regions at the opposite end of the board tend to be more compressed in classification reliability. Conversely, if the camera were oriented nearly directly at the board, the sector geometry tends to be more interpretable; however, the contour information from the shaft side tends to be weaker.
+
+It was observed through experimental results that the most balanced approach for the camera perspective appears to be at an intermediate $45^{\circ}$ orientation between the two extremes. When using low-resolution camera systems in which tip detection tends to be unstable, tilting the camera further toward the board at an angle of $50^{\circ}$ to $60^{\circ}$ appears to increase the robustness of the system, in which the end of the dart shaft tends to be more readily utilized as the terminal end for more stable performance.
+
+\setauthor{\firstauthor}
 
 
 \section{System Integration}

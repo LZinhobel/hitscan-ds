@@ -1,0 +1,29 @@
+digraph G {
+  rankdir=LR;
+  graph [fontsize=12, fontname="Helvetica", labelloc="t", label="Manual vs Automated Steel-Tip Scoring Workflow"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#444444", fillcolor="#f7f7f7"];
+  edge [color="#666666", arrowsize=0.8];
+
+  subgraph cluster_manual {
+    label="Manual Scoring";
+    color="#bbbbbb";
+    m1 [label="Throw darts"];
+    m2 [label="Read board manually"];
+    m3 [label="Compute turn score"];
+    m4 [label="Update score by hand/app"];
+    m5 [label="Resolve disputes/checkouts"];
+    m1 -> m2 -> m3 -> m4 -> m5;
+  }
+
+  subgraph cluster_auto {
+    label="HitScan Automated Scoring";
+    color="#bbbbbb";
+    a1 [label="Throw darts"];
+    a2 [label="Capture frame stream"];
+    a3 [label="Detect impact + tip"];
+    a4 [label="Map to sector/ring"];
+    a5 [label="Update game state + stats"];
+    a6 [label="Display result instantly"];
+    a1 -> a2 -> a3 -> a4 -> a5 -> a6;
+  }
+}

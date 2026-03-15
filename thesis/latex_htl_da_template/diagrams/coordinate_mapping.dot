@@ -1,0 +1,20 @@
+digraph G {
+  rankdir=TB;
+  graph [fontsize=12, fontname="Helvetica", labelloc="t", label="Coordinate Mapping from Image Space to Score"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#333333", fillcolor="#fff6e9"];
+  edge [color="#555555", arrowsize=0.8];
+
+  p [label="Pixel coordinates\n(x, y)"];
+  h [label="Homography / calibration\nimage -> board plane"];
+  n [label="Normalized board coordinates\n(x_n, y_n)"];
+  pol [label="Polar conversion\n(r, theta)"];
+  rs [label="Ring classification\n(single/double/triple/bull)"];
+  ss [label="Sector classification\n1..20"];
+  out [label="Final score token\nS20, D16, T19, 25, 50"];
+
+  p -> h -> n -> pol;
+  pol -> rs;
+  pol -> ss;
+  rs -> out;
+  ss -> out;
+}
