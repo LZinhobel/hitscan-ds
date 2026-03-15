@@ -222,7 +222,7 @@ def get_last_calibration():
 
 
 def main():
-    Y_OFFSET = 0
+    Y_OFFSET = -31
     global canvas_size, current_cap, camera_active, stop_camera_flag
 
     stop_camera_flag = False
@@ -270,7 +270,8 @@ def main():
     print("Press 'q' to quit. Throw darts and watch for results...")
 
     cv2.namedWindow("Dartboard View")
-    cv2.setMouseCallback("Dartboard View", mouse_callback)
+    #cv2.setMouseCallback("Dartboard View", mouse_callback)
+    cv2.setMouseCallback("Dartboard View", hover_callback)
     cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
                        lambda val: setattr(detector, "motion_thresh", val))
 
@@ -287,8 +288,8 @@ def main():
         outer = ring_data[0]
         board_ignore_mask = np.ones(raw_frame.shape[:2], dtype=np.uint8)
         cx, cy = int(outer[0]), int(outer[1])
-        ax = int(outer[2] * outer[3]) + 25
-        ay = int(outer[2] * outer[4]) + 25
+        ax = int(outer[2] * outer[3]) + 80
+        ay = int(outer[2] * outer[4]) + 80
         cv2.ellipse(board_ignore_mask, (cx, cy), (ax, ay), 0.0, 0.0, 360.0, (0,), -1)
 
         # Canvas mask for vis only — not used in ignore anymore
@@ -394,4 +395,5 @@ def main():
 
 
 if __name__ == "__main__":
+    #main()
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)

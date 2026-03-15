@@ -141,6 +141,7 @@
   function advanceTurn() {
     shotsThisTurn = 0;
     currentPlayer = (currentPlayer + 1) % 2;
+    clearHits(currentPlayer);
   }
 
   function endTurnAfterBust(playerIndex: number) {

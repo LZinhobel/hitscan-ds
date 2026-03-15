@@ -234,10 +234,11 @@ class DartDetector:
         return new_darts, thresh, contour_boxes, motion_level
 
     def _is_new_dart(self, tip, min_dist=30):
-        for known in self.known_darts:
-            if np.linalg.norm(np.array(tip) - np.array(known)) < min_dist:
-                return False
         return True
+        # for known in self.known_darts:
+        #     if np.linalg.norm(np.array(tip) - np.array(known)) < min_dist:
+        #         return False
+        # return True
 
     def get_groups(self):
         return groups
