@@ -1,0 +1,24 @@
+digraph G {
+  rankdir=LR;
+  graph [fontsize=12, fontname="Helvetica", labelloc="t", label="Lighting Comparison Sketch (Before vs After Ring Light)"];
+  node [fontname="Helvetica", fontsize=10, style="rounded,filled", color="#444444"];
+  edge [color="#555555", arrowsize=0.8, fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_before {
+    label="Without Ring Light";
+    color="#bbbbbb";
+    b1 [shape=box, fillcolor="#ffeaea", label="Directional room light"];
+    b2 [shape=circle, width=1.1, fixedsize=true, fillcolor="#f8f8f8", label="Board"];
+    b3 [shape=box, fillcolor="#ffeaea", label="Hard shaft shadows\n+ unstable contours"];
+    b1 -> b2 -> b3;
+  }
+
+  subgraph cluster_after {
+    label="With Ring Light";
+    color="#bbbbbb";
+    a1 [shape=ellipse, fillcolor="#fff9d6", label="Ring light around board"];
+    a2 [shape=circle, width=1.1, fixedsize=true, fillcolor="#f8f8f8", label="Board"];
+    a3 [shape=box, fillcolor="#e9ffe9", label="Uniform illumination\n+ cleaner mask"];
+    a1 -> a2 -> a3;
+  }
+}
