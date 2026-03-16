@@ -26,7 +26,8 @@ Other camera characteristics that were noted during the setup process were the i
 
 The camera distance was not based on any specific geometric constraint but rather on the ability of the image to contain the entire dartboard while at the same time maximizing the board occupancy in the image. This was justified since increasing the camera distances reduces the pixel detail at the tip of the contour.
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
 	\centering
 	\caption{Evaluation setup sheet used for repeatable test sessions.}
 	\label{tab:evaluation_setup_sheet}
@@ -43,14 +44,15 @@ The camera distance was not based on any specific geometric constraint but rathe
 		Primary evaluation goal & Stable sector classification under practical throw scenarios \\
 		\bottomrule
 	\end{tabularx}
-\end{table}
+\end{center}
 
-\begin{figure}[h]
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
 	\centering
 	\includegraphics[width=0.9\linewidth]{pics/camera_setup.png}
 	\caption{Conceptual sketch of the evaluation setup geometry (camera angle and distance).}
 	\label{fig:evaluation_setup_placeholder}
-\end{figure}
+\end{center}
 
 
 \section{Evaluation Metrics}
@@ -77,7 +79,8 @@ Most misclassifications belonged to one of three categories:
 
 The first two categories provided results that, although incorrect, were reasonable within a neighboring area rather than arbitrary data, which further reinforces the proximity of the localization to the actual impact location.
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
 	\centering
 	\caption{Observed practical outcome classes during evaluation sessions.}
 	\label{tab:observed_outcome_classes}
@@ -91,7 +94,7 @@ The first two categories provided results that, although incorrect, were reasona
 		Correctly ignored non-hit event & Medium & Out-of-bounds throw or no persistent board impact \\
 		\bottomrule
 	\end{tabularx}
-\end{table}
+\end{center}
 
 \section{Edge Case Analysis}
 
@@ -110,12 +113,13 @@ Given a 26 FPS rate and ring light illumination, motion blur was not a significa
 
 The ring light installation was a significant factor in minimizing potential issues. The few errors that occurred were due to camera vibrations.
 
-\begin{figure}[h]
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
 	\centering
 	\includegraphics[width=0.95\linewidth]{pics/generated/lighting_comparison_sketch.png}
 	\caption{Conceptual before/after sketch of lighting impact on shadow behavior and contour stability.}
 	\label{fig:lighting_comparison_placeholder}
-\end{figure}
+\end{center}
 
 \section{Experimental Results}
 
@@ -148,15 +152,16 @@ Overall, the evaluation confirms that the current pipeline is viable for recreat
 To improve repeatability of future experiments, the following protocol was derived from the final evaluation setup.
 
 \begin{lstlisting}[numbers=left,caption=Minimal reproducibility protocol for future test repetitions, label=lst:evaluation_repro_protocol]
-1. Verify camera mount rigidity and fixed board alignment.
-2. Confirm ring-light operation and remove directional room light hotspots.
-3. Re-run calibration and save configuration before test session.
-4. Execute mixed throw set: center, near-edge, out-of-bounds, rapid succession.
-5. Log each mismatch under one of the defined failure categories.
-6. Re-test after any parameter adjustment to detect regressions.
+Verify camera mount rigidity and fixed board alignment.
+Confirm ring-light operation and remove directional room light hotspots.
+Re-run calibration and save configuration before test session.
+Execute mixed throw set: center, near-edge, out-of-bounds, rapid succession.
+Log each mismatch under one of the defined failure categories.
+Re-test after any parameter adjustment to detect regressions.
 \end{lstlisting}
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
 	\centering
 	\caption{Failure taxonomy used for structured error logging.}
 	\label{tab:failure_taxonomy}
@@ -170,4 +175,4 @@ To improve repeatability of future experiments, the following protocol was deriv
 		Vibration-induced instability & Mount/board coupling causes global frame motion and detector overload \\
 		\bottomrule
 	\end{tabularx}
-\end{table}
+\end{center}

@@ -4,40 +4,43 @@
 
 \subsubsection{Technical Capabilities}
 
-The technical capabilities of the commercial automatic scoring systems used in televised darts tournaments are based on the multi-camera triangulation approach. A minimum of three high-speed cameras are used to track the dart trajectory. Similar methodologies are widely used in sports tracking research where the reconstruction of fast-moving objects in three-dimensional space is required \cite{Osadchy2006}. The cameras are set to run at high frames per second to minimize the effect of motion blur while precisely determining the trajectory of the dart. 
+The technical capabilities of commercial automatic scoring systems used in televised darts tournaments are based on a multi-camera triangulation methodology. A minimum of three high-speed cameras is used to track the trajectory of the dart. This methodology is in line with prevalent methodology in sports tracking research, where the reconstruction of fast-moving objects in three-dimensional space is necessary \cite{Osadchy2006}. These cameras are operated at high frame rates to eliminate motion blur and accurately track the trajectory of the dart.
 
-To ensure robustness in the system with regard to the problem of occlusion, the dart trajectory is tracked through model-based tracking with Kalman filter estimation during the period of invisibility in flight \cite{Welch}. Finally, the region where the dart strikes the dartboard is identified through subpixel accuracy.
+In order to eliminate occlusions, the trajectory of the dart is tracked using model-based tracking with Kalman filter estimation during periods of invisibility \cite{Welch}. The region of impact on the dartboard is accurately determined using subpixel resolution.
 
 \subsubsection{Cost and Setup Requirements}
 
-The technical capabilities of the system require the setup of multiple camera systems with precise camera calibration. The precise camera calibration is required to ensure the accuracy of the system. The accuracy of the system is compromised with the misalignment of the camera baseline \cite{Hartley2004}. 
+The technical capabilities of the system require setting up a multi-camera system with camera calibration. Camera calibration is important in order to ensure accurate results from the system. If the cameras are not accurately aligned, the system will not produce accurate results \cite{Hartley2004}.
 
-Thus, the system setup is quite complex. The system is quite expensive. Thus, the system is not suitable for personal use. The complexity of the system setup is the reason for the need for alternative systems that are based on the use of a single camera system.
+As a result, the system is complex and expensive, making it unsuitable for home use. This complexity in setting up the system is one of the factors that prompted the consideration of alternative methodologies based on a single-camera system.
 
-\begin{table}[h]
+\vspace{\baselineskip}
+\begin{center}
+\captionsetup{type=table,hypcap=false}
 	\centering
 	\caption{Comparative overview of dominant automatic scoring approach families.}
 	\label{tab:related_work_comparison}
-	\begin{tabularx}{\linewidth}{@{}X X X X@{}}
+	\begin{tabularx}{\linewidth}{@{} >{\hsize=0.9\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=0.9\hsize\centering\arraybackslash}X @{}}
 		\toprule
-		\textbf{Approach} & \textbf{Primary Strength} & \textbf{Primary Weakness} & \textbf{Consumer Suitability} \\
+		\textbf{Approach} & \shortstack[l]{\textbf{Primary}\\\textbf{Strength}} & \shortstack[l]{\textbf{Primary}\\\textbf{Weakness}} & \shortstack{\textbf{Consumer}\\\textbf{Suitability}} \\
 		\midrule
 		Multi-camera vision systems & High spatial observability and strong occlusion robustness & High setup/calibration complexity and high hardware cost & Low \\
 		Sensor or laser-based systems & Fast event triggering and reduced image-processing load & Material/mount dependency and limited visual verification & Medium \\
 		Single-camera classical CV (this work) & Low cost, maintainable stack, no training data dependency & Boundary sensitivity and bounce-out limitations & High \\
 		\bottomrule
 	\end{tabularx}
-\end{table}
+\end{center}
+\vspace{\baselineskip}
 
 \subsection{Laser and Sensor-Based Systems}
 
 \subsubsection{Hardware Dependencies}
 
-The alternative commercial systems are based on the use of laser systems or vibration sensors attached to the dartboard. The dart location is identified through the interruption of the laser beams or the propagation of the vibration through the dartboard surface. Similar technical capabilities are used in the impact localization system where multiple sensors are used to track the impact location through the time difference in the impact detection system \cite{Schwingshackl2010}.
+The alternative systems that have been made available in the market use laser technology or a sensor that is attached to the dartboard. In this system, the position of the dart is determined by the interruption of laser beams or the propagation of vibrations. A similar technology is used in the impact localization system, in which several sensors are used to detect the position of the dart based on the time difference in the impact detection process \cite{Schwingshackl2010}.
 
 \subsubsection{Accuracy Characteristics}
 
-Although sensor-based systems demonstrate reliability in terms of steel darts, they are subject to material dependency and mechanical damping effects. Wave propagation is affected by board wear and mounting conditions, and this results in systematic localization errors \cite{Schwingshackl2010}. Furthermore, this system is unable to identify bounce-outs or mid-air collisions and does not provide a visual verification.
+The sensor-based system provides reliable results for steel darts but also depends upon material properties and damping effects. In this system, the wave propagation also depends upon the wear and tear of the dartboard, resulting in localization error. In addition, this system cannot detect bounce-outs or mid-air collisions. Moreover, it also fails to provide visual verification.
 
 \section{Research on Sports Object Tracking}
 
@@ -45,15 +48,15 @@ Although sensor-based systems demonstrate reliability in terms of steel darts, t
 
 \subsubsection{Motion Segmentation Techniques}
 
-Motion segmentation is a widely applied technique in video analysis for segmenting out moving objects in a video stream. Background subtraction techniques, such as adaptive Gaussian mixture model-based methods, are commonly applied for background subtraction and segmenting out moving foreground objects from a static background \cite{Zivkovic2004}. 
+Motion segmentation techniques have been widely used in video analysis to segment moving objects in a given video. Background subtraction techniques, including adaptive Gaussian mixture model-based techniques, have been used to segment moving objects from the background \cite{Zivkovic2004}.
 
-These techniques are widely applied in sports object tracking for detecting moving balls or projectiles. Edge detection and object contour extraction are also applied for more accurate object localization by detecting edges in a video frame \cite{Canny1986}. For circular shapes, a Hough transform-based object detection technique is often applied \cite{Duda1972}. These techniques are efficient in detecting moving objects in a video stream and are a better alternative to deep learning-based methods.
+These techniques have been widely used in sports object tracking to detect moving objects such as balls or projectiles. Edge detection techniques have also been used to improve the accuracy of localization. In edge detection techniques, object contour detection is used to improve localization accuracy. In object contour detection, edges in the image or video frame are detected to improve localization accuracy \cite{Canny1986}. For circular objects, a Hough transform-based detection technique can also be used \cite{Duda1972}. These techniques have been used to detect moving objects in a video frame.
 
 \subsubsection{Trajectory Estimation Methods}
 
-Once a moving object is detected in a video frame, its trajectory is estimated using state estimation methods. Kalman filtering is often applied for estimating a ball or projectile trajectory and correcting noise in the measurements \cite{Welch}. 
+After detecting a moving object in the image or video frame, its trajectory can be estimated using state estimation techniques. In state estimation techniques, a Kalman filter-based technique can be used to estimate the trajectory of the object in the image or video frame \cite{Welch}.
 
-This is useful in detecting a temporarily occluded ball or estimating its impact position in a sports environment \cite{Osadchy2006}. The combination of object detection and trajectory estimation is useful in detecting a high-contrast, moving object in a video stream.
+This method is advantageous for detecting temporarily occluded balls or for estimating the position of ball impact within a sports environment \cite{Osadchy2006}. The integration of object detection and trajectory estimation increases the capability for detecting a high-contrast moving object within a video stream.
 
 \section{Existing Open Source Projects}
 
@@ -61,11 +64,11 @@ This is useful in detecting a temporarily occluded ball or estimating its impact
 
 \subsubsection{Marker-Based Alignment}
 
-Several research prototypes make use of fiducial markers for camera calibration. ArUco markers allow for accurate pose estimation, especially in the case of partial occlusion. By using multiple markers attached to the board, it is possible to compute the homography between the image coordinates and the board coordinates. This way, it is possible to transform the impact point coordinates into standardized dart board coordinates regardless of the camera's point of view.
+Fiducial markers have been used for camera calibration in various research prototypes. ArUco markers provide accurate pose estimation, especially in the presence of partial occlusion. By using multiple markers on the dartboard, it is possible to compute the homography between image coordinates and dartboard coordinates. This enables the computation of impact point coordinates in standard dartboard coordinates, irrespective of the camera perspective.
 
 \subsubsection{Geometric Modeling Approaches}
 
-After the camera has been calibrated, the majority of the systems make use of a geometric model of the dart board, which is composed of concentric rings and radial sectors. By determining the boundaries of the closest ring and sector, it is possible to determine the hit location. This approach replaces the machine learning-based method with a more deterministic approach, which relies on the mapping from pixel coordinates to board regions. This approach is more appropriate for real-time applications, especially considering the reduced computational requirements.
+Most systems, after camera calibration, have used geometric modeling for dartboard alignment. The geometric model consists of concentric rings and radial sectors. By identifying the nearest ring and sector boundaries, it is possible to determine the hit location. This approach is advantageous over machine learning-based methods, as it uses a deterministic process instead of mapping pixel coordinates to dartboard regions, making it more suitable for real-time applications due to lower computational costs.
 
 \section{Position of This Work in Current Literature}
 
@@ -73,31 +76,34 @@ After the camera has been calibrated, the majority of the systems make use of a 
 
 \subsubsection{Hardware Differences}
 
-The reviewed approaches show a clear tradeoff between hardware complexity and robustness. Multi-camera systems improve spatial observability, while sensor-based systems avoid image processing but introduce dependencies on board material and mounting conditions. These tradeoffs define the design space in which the present work is situated.
+From the existing approaches, it is evident that using multiple hardware configurations for camera placement and using sensor-based systems instead of image processing provide trade-offs for robustness. The presence of multiple cameras increases the spatial observability, while the sensor-based system avoids image processing altogether but is dependent on the material and sensor placement conditions.
 
 \subsubsection{Novelty of a Motion-Threshold Pipeline}
 
-Within that design space, classical computer vision remains a relevant alternative to learned detection pipelines. Prior work on motion segmentation, contour-based localization, and geometric board modeling indicates that a deterministic pipeline can remain viable when the scene is constrained and the object geometry is known. This motivates the methodological direction taken in the present work without repeating the detailed technology justification.
+In this space, classical computer vision offers a relevant alternative to the learned-based detection process. In fact, past works on motion segmentation, contour-based localization, and even geometric board modeling have shown that a deterministic process could still be relevant in constrained conditions. This is why we will not repeat any technological justification for this direction.
 
 \subsection{Comparative Decision Criteria}
 
 Beyond pure detection accuracy, practical deployment requires balancing setup burden, interpretability, and maintenance overhead.
 
-\begin{table}[h]
+\vspace{\baselineskip}
+\begin{center}
+\captionsetup{type=table,hypcap=false}
 	\centering
 	\caption{Qualitative decision matrix used to position the chosen approach.}
 	\label{tab:related_work_decision_matrix}
-	\begin{tabularx}{\linewidth}{@{}X c c c c c@{}}
+	\begin{tabularx}{\linewidth}{@{} >{\arraybackslash}X >{\centering\arraybackslash}p{1.6cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{1.5cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{2.0cm} @{}}
 		\toprule
-		\textbf{Criterion} & \textbf{Multi-Cam} & \textbf{Sensor/Laser} & \textbf{ML Vision} & \textbf{Classical CV} & \textbf{Priority in This Thesis} \\
+		\shortstack{\textbf{Criterion}} & \shortstack{\textbf{Multi}\\\textbf{Cam}} & \shortstack{\textbf{Sensor/}\\\textbf{Laser}} & \shortstack{\textbf{ML}\\\textbf{Vision}} & \shortstack{\textbf{Classical}\\\textbf{CV}} & \shortstack{\textbf{Priority in}\\\textbf{This Thesis}} \\
 		\midrule
 		Hardware cost & Low & Medium & Medium & High & High \\
 		Installation simplicity & Low & Medium & Medium & High & High \\
 		Model/data dependency & High & High & Low & High & High \\
-		Explainability/debuggability & Medium & Medium & Low & High & High \\
+		Explainability & Medium & Medium & Low & High & High \\
 		Recreational-home fit & Low & Medium & Medium & High & High \\
 		\bottomrule
 	\end{tabularx}
-\end{table}
+\end{center}
+\vspace{\baselineskip}
 
 The matrix highlights why a deterministic single-camera pipeline was selected. It does not maximize every individual metric, but it aligns best with the objective profile of low-cost recreational deployment under constrained hardware.

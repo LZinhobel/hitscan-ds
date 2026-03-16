@@ -10,11 +10,12 @@ Due to previously outlined specifications the system's database is designed to r
 In turn the model stays incredibly simple with only 3 Entities: Game, Player and Score. The Player entity is only used to store the player's name and a unique identifier. 
 The Game entity stores the players involved and the current state of the game. The Score entity is used to connect everything together by storing the points scored in each turn and the player who scored them. 
 These scores are then evaluated on the statistics page, grouped by player.
-\begin{figure}[h t]
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
     \centering
     \includegraphics[scale=0.5]{pics/dataModel.png}
     \caption{PlantUML diagram of the data model}
-\end{figure}
+\end{center}
 \subsection{Game Rule Modeling}
 Luckily the difference in competetive dart rulesets is minimal and only affects the maximum amount of score a player is given. Therefore we don't have to adapt the game entity to accomidate different rulesets and can instead just limit the score field to either accepting 301 or 501.
 \begin{lstlisting}[numbers=left,caption=Game creation endpoint limiting score based on ruleset, label=lst:game_creation]
@@ -56,11 +57,18 @@ For this edgecase we had to add a button which counted the current throw as a mi
 \section{Calibration}
 The detection system works in 2 parts: first it plainly estimates the position of the dart tip in the image and then it subsequently uses a set of calibrated rings to determine the score based on the tip's position. Additonally we need to get the position of the "lines" between the sections of the dart board. This works very similiarly to the ring calibration, and requires the user to position them between the 20 and 1 position. 
 The rings and lines have to be manually calibrated by the user due to differences in dartboards and camera position and angle. In our development time we used opencv to calibrate the rings in the debug window directly and were pretty happy with the controls and feel.
-\begin{figure}[h]
+
+\vspace{\baselineskip}
+
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
     \centering
     \includegraphics[scale=0.3]{pics/earlyCalibration.jpg}
     \caption{Early Prototype of the System with the calibration rings drawn on the camera feed.}
-\end{figure} 
+\end{center} 
+
+\vspace{\baselineskip}
+
 \subsection{Frontend-Based Calibration}
 Implementing the calibration on the frontend wasn't as smooth as we expected it to be. We very quickly ran into the limitation of cameras only being able to be used by one process at a time. Previously our python detection backend started with the frontend and constantly monitored the camera, regardless frontend state. This was a non-issue, as the socket may have fired but never got processed unless the user was on the game page.
 However, when we moved the calibration to the frontend, we couldn't access any cameras and had to implement a workaround: when the user starts the entire system, the detection backend starts without any camera access and waits until it gets it's calibration data. Once the user is done calibrating, the frontend releases all cameras it possibly could have access to and sends the calibration data to the detection backend, which then starts up the camera and starts processing frames.
@@ -112,7 +120,8 @@ diff = cv2.absdiff(self.bg_frame, blurred)
 thresh = self._apply_filter_pipeline(diff)
 \end{lstlisting}
 
-\begin{figure}[h]
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
   \centering
   \begin{subfigure}{0.31\linewidth}
     \centering
@@ -133,7 +142,7 @@ thresh = self._apply_filter_pipeline(diff)
   \end{subfigure}
   \caption{Frame differencing stage.}
   \label{fig:dart_detection_diff_00062}
-\end{figure}
+\end{center}
 
 \subsubsection{Mask Generation}
 Subsequent to the differencing step, a fixed thresholding process is employed, where the threshold value can be adjusted using a trackbar. The resulting image is then subjected to morphological refinement, where two dilation and one erosion process take place. This is then followed by the proposed closing process that aims at joining disjointed regions that correspond to the foreground region of interest.
@@ -152,7 +161,8 @@ thresh = cv2.erode(thresh, None, iterations=1)
 thresh = self._connect_dart_parts(thresh)
 \end{lstlisting}
 
-\begin{figure}[h]
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
   \centering
   \begin{subfigure}{0.31\linewidth}
     \centering
@@ -194,7 +204,7 @@ thresh = self._connect_dart_parts(thresh)
 
   \caption{Mask-generation pipeline detail.}
   \label{fig:dart_detection_mask_00062}
-\end{figure}
+\end{center}
 
 
 \subsection{Blob Detection and Filtering}
@@ -232,24 +242,6 @@ if motion_level > 10000:
   return [], thresh, contour_boxes, motion_level
 \end{lstlisting}
 
-\begin{figure}[h]
-  \centering
-  \begin{subfigure}{0.47\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{pics/dart_detection/00062_04_largest_contours.png}
-    \caption{Largest contour candidates}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.47\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{pics/dart_detection/00062_05_final_tip.png}
-    \caption{Final tip decision}
-  \end{subfigure}
-  \caption{Contour filtering and final dart-tip localization.}
-  \label{fig:dart_detection_final_00062}
-\end{figure}
-
-
 \subsection{Dart Tip Estimation}
 
 \subsubsection{Vector Approximation}
@@ -268,6 +260,24 @@ if tip is not None and centroid is not None:
   if tip[0] >= centroid[0]:
     return [], thresh, contour_boxes, motion_level
 \end{lstlisting}
+
+\begin{center}
+\captionsetup{type=figure,hypcap=false}
+  \centering
+  \begin{subfigure}{0.47\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_04_largest_contours.png}
+    \caption{Largest contour candidates}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.47\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{pics/dart_detection/00062_05_final_tip.png}
+    \caption{Final tip decision}
+  \end{subfigure}
+  \caption{Contour filtering and final dart-tip localization.}
+  \label{fig:dart_detection_final_00062}
+\end{center}
 
 \subsubsection{Line Fitting Techniques}
 The process of line fitting for the dart shaft was conceptually explored during the implementation process but was eventually dropped. From an implementation perspective, the use of the "merged contour" for the hull estimation was found to provide a more stable outcome under noisy board texture and fragmentation. The final version of the detector thus uses a contour-based fallback, rather than a line model, by selecting the leftmost point of the overall contour stack if the tip fails.
@@ -317,7 +327,8 @@ TODO: Describe how frontend canvas coordinates are transformed to/from backend c
 \subsubsection{Visual Feedback and Error States}
 TODO: Explain visual indicators for valid hit, bust, invalid throw, disconnected backend, and calibration missing.
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
   \centering
   \caption{UI feedback states to be documented by Marvin.}
   \label{tab:ui_feedback_states_todo}
@@ -332,7 +343,7 @@ TODO: Explain visual indicators for valid hit, bust, invalid throw, disconnected
     Calibration invalid/missing & TODO & TODO \\
     \bottomrule
   \end{tabularx}
-\end{table}
+\end{center}
 
 
 \subsection{Game UI}
@@ -372,7 +383,8 @@ TODO: Define what state is ephemeral (UI-only) and what state is persisted to ba
 \subsubsection{State Consistency Across Views}
 TODO: Explain how navigation between game/statistics/history screens preserves consistency without stale data artifacts.
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
   \centering
   \caption{Ruleset/state edge cases Marvin should document and evaluate.}
   \label{tab:ruleset_edge_cases_todo}
@@ -387,7 +399,7 @@ TODO: Explain how navigation between game/statistics/history screens preserves c
     Ruleset change mid-game & TODO & TODO \\
     \bottomrule
   \end{tabularx}
-\end{table}
+\end{center}
 
 \subsection{Statistics and Persistence}
 
@@ -439,7 +451,8 @@ TODO: Explain persistence implementation details and migration from transient st
 \subsubsection{Statistical Evaluation Completed (04.08.2025)}
 TODO: Describe final stats features and how they use stored game data.
 
-\begin{table}[h]
+\begin{center}
+\captionsetup{type=table,hypcap=false}
   \centering
   \caption{Milestone evidence checklist for Marvin's chapter expansion.}
   \label{tab:frontend_milestone_evidence_todo}
@@ -453,7 +466,7 @@ TODO: Describe final stats features and how they use stored game data.
     Statistical evaluation & TODO (charts + computation notes) & TODO \\
     \bottomrule
   \end{tabularx}
-\end{table}
+\end{center}
 
 \setauthor{\secondauthor}
 
