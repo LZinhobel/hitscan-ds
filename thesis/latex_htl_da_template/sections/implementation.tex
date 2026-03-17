@@ -299,10 +299,10 @@ if (tip is None or centroid is None) and isinstance(all_pts, np.ndarray) and all
 \subsection{Web Application Architecture}
 
 \subsubsection{Technology Stack and Rationale}
-The heavy emphasis on real-time updates and low-latency, with a large amount of logic being handled on the frontend, made Svelte-Kit an attractive choice, as it compiles to highly optimized vanilla JavaScript with minimal runtime overhead. Vite was used as the build tool due to it's svelte integration and fast hot module replacement, which was essential for rapid development and iteration. For state management, we opted for Svelte's built-in stores with a minor add-on library for local storage persistence, as the application's state is relatively straightforward and doesn't require the complexity of a more robust state management solution. The decision to handle most of the game logic on the frontend was driven by the need for immediate responsiveness to user actions and socket events, as well as to reduce the load on the backend and minimize round-trip latency for game state updates.
+The high importance of real-time updates and the high amount of logic being executed on the frontend encouraged us to choose Svelte-Kit, as it compiles directly into highly optimized vanilla JavaScript with a minimal runtime footprint. Vite was also chosen as the build tool because of its integration with Svelte and fast hot module replacement, which was a must-have for rapid development. For state management, we chose Svelte's stores with a small add-on library for local storage persistence, as the state of the application is simple and doesn’t warrant the complexity of a more advanced state management library. The choice of executing most of the game logic on the frontend was influenced by the need for instant responses to user and socket events, as well as the desire to reduce the burden on the backend and minimize latency for updating the game state.
 
 \subsubsection{Application Module Structure}
-The frontend codebase is structured according to modern SvelteKit conventions, promoting modularity and maintainability. The primary entry point is the \\texttt{src/routes/} directory, which defines the application's pages and navigation flow. Each major user-facing screen, such as setup, game, and statistics, is implemented as a dedicated route subfolder (e.g., \\texttt{routes/game/}, \\texttt{routes/setup/}, \\texttt{routes/stats/}), with Svelte components encapsulating the UI and logic for each view. Reusable UI elements, including buttons, headers, and step counters, are organized within \\texttt{src/comps/}, enabling consistent design and code reuse across the application. State management is handled via Svelte stores, located in \\texttt{src/stores/}, which provide reactive data flows for player information, calibration state, and game rules. The calibration module is implemented as a dedicated component (\\texttt{CameraCalibrator.svelte}) and associated store, facilitating interactive camera setup and persistence of calibration parameters. While the socket client and service logic are integrated within the page components and stores, the architecture supports real-time synchronization of game state and statistics through event-driven updates. This modular organization enables clear separation of concerns between presentation, state, and domain logic, supporting both rapid development and future extensibility.
+The frontend codebase is structured according to modern SvelteKit conventions, promoting modularity and maintainability. The primary entry point is the \texttt{src/routes/} directory, which defines the application's pages and navigation flow. Each major user-facing screen, such as setup, game, and statistics, is implemented as a dedicated route subfolder (e.g., \texttt{routes/game/}, \texttt{routes/setup/}, \texttt{routes/stats/}), with Svelte components encapsulating the UI and logic for each view. Reusable UI elements, including buttons, headers, and step counters, are organized within \texttt{src/comps/}, enabling consistent design and code reuse across the application. State management is handled via Svelte stores, located in \texttt{src/stores/}, which provide reactive data flows for player information, calibration state, and game rules. The calibration module is implemented as a dedicated component (\texttt{CameraCalibrator.svelte}) and associated store, facilitating interactive camera setup and persistence of calibration parameters. While the socket client and service logic are integrated within the page components and stores, the architecture supports real-time synchronization of game state and statistics through event-driven updates. This modular organization enables clear separation of concerns between presentation, state, and domain logic, supporting both rapid development and future extensibility.
  
 \subsubsection{Routing and Navigation Flow}
 TODO: Document the route structure and user flow between setup, game, statistics, and history screens.
@@ -319,28 +319,25 @@ TODO: Document the route structure and user flow between setup, game, statistics
 \subsection{Virtual Dartboard Design}
 
 \subsubsection{Rendering Strategy}
-TODO: Explain how board overlays, hit highlights, and throw markers are rendered in the browser, including why this approach was preferred over alternatives.
+The rendering of the virtual dartboard and its interactive overlays is accomplished using the browser's native HTML5 canvas API, orchestrated from within Svelte components. Overlays such as sector boundaries, calibration rings, and throw markers are drawn programmatically, enabling dynamic updates in response to game events. Throw markers are rendered as layered graphical primitives (e.g., circles, lines, and text) on top of the static board image, with their positions determined by the coordinates passed from the socket. This approach was chosen over alternatives such as SVG or DOM-based rendering due to the superior performance and lower latency of canvas for frequent, real-time updates, as well as its ability to efficiently handle complex, pixel-level manipulations required for accurate hit visualization.
 
 \subsubsection{Coordinate Mapping Between View and Backend}
-TODO: Describe how frontend canvas coordinates are transformed to/from backend coordinates and how scaling is handled on different screen sizes.
+To ensure accurate mapping between backend-reported hit locations and frontend visual feedback the frontend implements a coordinate transformation pipeline. Canvas coordinates, which are inherently dependent on the current viewport size and device pixel ratio, are normalized to a canonical board coordinate system. Calibration parameters, obtained during the setup phase, define the geometric relationship between the camera-captured board and the rendered canvas, allowing for mapping between frontend and backend coordinate spaces. 
 
 \subsubsection{Visual Feedback and Error States}
-TODO: Explain visual indicators for valid hit, bust, invalid throw, disconnected backend, and calibration missing.
-
+The user interface also gives immediate visual feedback. For a valid throw, it displays a change in the scoreboard, reflecting the points scored, and a marker on the dartboard. For an invalid throw, it displays an X on the scoreboard. Because of the limitations of the virtual Dartboard, an out-of-bounds throw is not displayed on the dartboard; it is only displayed as a missed throw. These mechanisms are intended to maximize user awareness, minimize the chances of incorrect user actions, and provide a seamless and robust user interface for all states of operation.
 \begin{center}
 \captionsetup{type=table,hypcap=false}
   \centering
-  \caption{UI feedback states to be documented by Marvin.}
+  \caption{UI feedback states.}
   \label{tab:ui_feedback_states_todo}
   \begin{tabularx}{\linewidth}{@{}X X X@{}}
     \toprule
-    \textbf{State} & \textbf{Current UI Behavior} & \textbf{User Impact} \\
+    \textbf{State} & \textbf{Current UI Behavior} \\
     \midrule
-    Valid hit & TODO & TODO \\
-    Bust & TODO & TODO \\
-    Miss / out-of-bounds & TODO & TODO \\
-    Backend disconnected & TODO & TODO \\
-    Calibration invalid/missing & TODO & TODO \\
+    Valid hit & Shows score update and visual marker\\
+    Bust & Clears Scores out of Scoreboard\\
+    Miss / out-of-bounds & Shows miss on Scoreboard \\
     \bottomrule
   \end{tabularx}
 \end{center}
@@ -349,57 +346,32 @@ TODO: Explain visual indicators for valid hit, bust, invalid throw, disconnected
 \subsection{Game UI}
 
 \subsubsection{Real-Time State Synchronization}
-TODO: Explain how websocket events are consumed and synchronized across multiple connected clients, including conflict handling and event ordering.
-
-\subsubsection{Responsive Layout Strategy}
-TODO: Describe layout adaptations for phone, tablet, and desktop and identify screen-space priorities for each.
+Real-time synchronization of game state across multiple clients is achieved through the use of websocket-based event streams. The frontend establishes a persistent websocket connection to the backend subscribing to dart hit events. Upon receiving an event (e.g., a \texttt{"dart hit", "T20"} message), the client applies the appropriate ruleset logic, and updates the local state.
 
 \subsubsection{Scoreboard Interaction Model}
-TODO: Explain turn progression UX, throw confirmation, undo, miss button behavior, and checkout visualization.
+The scoreboard interface is designed to provide intuitive and immediate feedback for all core game actions. Turn progression is visually indicated, with the active player and remaining throws clearly highlighted. An Undo button allows users to correct falsely registered throws. All interactions are tightly coupled to the underlying state management logic, ensuring that the UI remains synchronized with the authoritative game state.
 
-\subsubsection{Input Validation and User Safeguards}
-TODO: Document safeguards against invalid game actions (double-submit, wrong player turn, invalid ruleset transitions).
-
-\begin{lstlisting}[numbers=left,caption=Suggested event/state flow skeleton for Marvin to replace with real implementation details, label=lst:frontend_event_flow_todo]
-// TODO: Replace with actual frontend event handling flow
-// websocket.on("dart_hit") -> validate active game/turn
-// -> apply game rule logic
-// -> persist throw
-// -> update local/remote state
-// -> render scoreboard and stats widgets
+\begin{lstlisting}[numbers=left,caption=Frontend event/state flow, label=lst:frontend_event_flow]
+websocket.on("dart_hit") => {
+  subtract score from current player;
+  apply game rule logic;
+  persist throw;
+  update local state;
+  render scoreboard and dartboard ;
+}
 \end{lstlisting}
 
 \subsection{Game Logic and State Management}
 
 \subsubsection{Ruleset Engine (301, 501, Double Out)}
-TODO: Explain frontend-side ruleset implementation details, including bust handling and winning-condition checks.
+The frontend implements the core rulesets for standard dart games, including 301, 501, and Double Out, directly within the application logic. Each ruleset is encapsulated as a set of functions that evaluate throw outcomes, manage score reductions, and enforce bust and win conditions. Busts are detected by simulating the score after each throw and reverting the state if the player's score would fall below zero or violate the ruleset's constraints (e.g., failing to finish on a double in Double Out mode). Winning conditions are checked after each valid throw, with the UI providing immediate feedback when a player achieves a legal checkout.
 
 \subsubsection{Turn Lifecycle and Throw Sequencing}
-TODO: Describe turn start/end transitions, throw counters, and handling of interrupted rounds.
+Turn management is orchestrated through a combination of state variables and event-driven transitions. Each turn begins with the activation of a new player and the reset of the throw counter. Throws are tracked sequentially, and the turn concludes either after the maximum number of throws is reached or when a bust or win condition is triggered.
 
-\subsubsection{State Persistence Boundaries}
-TODO: Define what state is ephemeral (UI-only) and what state is persisted to backend storage.
 
 \subsubsection{State Consistency Across Views}
-TODO: Explain how navigation between game/statistics/history screens preserves consistency without stale data artifacts.
-
-\begin{center}
-\captionsetup{type=table,hypcap=false}
-  \centering
-  \caption{Ruleset/state edge cases Marvin should document and evaluate.}
-  \label{tab:ruleset_edge_cases_todo}
-  \begin{tabularx}{\linewidth}{@{}X X X@{}}
-    \toprule
-    \textbf{Scenario} & \textbf{Expected Behavior} & \textbf{Implementation Note} \\
-    \midrule
-    Bust on third dart & TODO & TODO \\
-    Checkout with Double Out enabled & TODO & TODO \\
-    Undo after bust sequence & TODO & TODO \\
-    Reconnect during active turn & TODO & TODO \\
-    Ruleset change mid-game & TODO & TODO \\
-    \bottomrule
-  \end{tabularx}
-\end{center}
+The consistency of state between different views (e.g., setup, statistics, game) is ensured through centralization of all authoritative game data within Svelte stores, which are reactive and available throughout the application. Navigation between views does not require fetching data again or resetting state; instead, the current state is preserved and propagated, avoiding data artifacts and ensuring a seamless user experience. Any updates to the underlying data model are immediately reflected throughout all affected UI components, facilitating robust multi-view scenarios.
 
 \subsection{Statistics and Persistence}
 
