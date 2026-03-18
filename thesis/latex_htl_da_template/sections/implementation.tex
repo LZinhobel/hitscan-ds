@@ -70,12 +70,11 @@ The rings and lines have to be manually calibrated by the user due to difference
 \vspace{\baselineskip}
 
 \subsection{Frontend-Based Calibration}
-Implementing the calibration on the frontend wasn't as smooth as we expected it to be. We very quickly ran into the limitation of cameras only being able to be used by one process at a time. Previously our python detection backend started with the frontend and constantly monitored the camera, regardless frontend state. This was a non-issue, as the socket may have fired but never got processed unless the user was on the game page.
-However, when we moved the calibration to the frontend, we couldn't access any cameras and had to implement a workaround: when the user starts the entire system, the detection backend starts without any camera access and waits until it gets it's calibration data. Once the user is done calibrating, the frontend releases all cameras it possibly could have access to and sends the calibration data to the detection backend, which then starts up the camera and starts processing frames.
-Another issue we ran into was the fact that there is no matching identifier between the cameras in python and the cameras in the browser. This means that there is no way for the detection to know which camera the user selected in the frontend. However in most cases the user will only have one external camera connected with possibly an internal laptop camera, which are usually read in the same order in both programs.
-We tried many fixes, but couldn't find anything that worked so we decided to just assume that the first camera in the frontend is the same as the first camera in the backend, which worked for us during testing but may cause issues for users with multiple cameras. A hint was added to the calibration page to only have one camera connected for the best experience.
+The implementation of front-end-based camera calibration encountered significant technical constraints that necessitated architectural reconsideration. Operating systems enforce exclusive camera resource access at the device driver level, permitting only a single application process to maintain an active connection to a given camera interface at any given time. The original system architecture maintained persistent camera access within the Python detection backend throughout application execution, which operated without conflict given that socket-based camera frame notifications were only processed by the frontend when the user was actively engaged with the game view. However, the relocation of calibration functionality to the frontend triggered resource contention: the WebRTC video acquisition pipeline and the Python OpenCV backend could not simultaneously access the camera device. To resolve this constraint, the system was redesigned to employ sequential resource access: the detection backend initializes without camera connectivity and enters a waiting state pending receipt of calibration data from the frontend. Upon completion of the frontend calibration workflow, the browser releases all camera resources through explicit stream termination, enabling the detection backend to subsequently acquire the camera device and initiate frame processing.
+
+A secondary implementation challenge arose from the absence of a unified camera identification scheme across the two execution environments. The Python ecosystem and browser APIs implement independent camera enumeration protocols with no standardized cross-platform identifier, rendering it impossible to guarantee that a user-selected camera index in the WebRTC context corresponds to the same physical device in the OpenCV context. Mitigation of this ambiguity relied on an ordinal mapping assumption: in the typical single-camera deployment scenario (one external camera plus possible integrated laptop optics), both environments enumerate devices in consistent ordering such that the first enumerated camera is identical across platforms. This heuristic approach provided satisfactory operation during development testing but introduces failure modes in multi-camera configurations where enumeration order divergence could occur. To bound user-facing impact, an informational notice was added to the calibration interface recommending single-camera configurations for optimal operation.
 \subsubsection{Coordinate System Definition}
-This was one of the easiest parts of the calibration to implement, as the format of the camera feed in the frontend and the backend were the same. We create a canvas element in the size of the video feed, and draw the calibration rings on top. The X/Y coordinates and scalings of the rings are saved in a JSON format and sent to the backend, which then persists them in a JSON file which is read on every startup. This allows the user to use the same calibration after it has been done once. 
+The definition and persistence of the coordinate transform from image space to dartboard scoring regions was simplified by the geometric compatibility between the frontend WebRTC video stream and the backend OpenCV frame acquisition: both environments operate on frames with identical pixel dimensions and color spaces. The calibration workflow constructs an HTML5 canvas element dimensioned to match the video frame size, which serves as the rendering surface for interactive ring adjustment overlays. Calibration parameters—specifically the center coordinates ($c_x$, $c_y$), scale factor, and anisotropic stretch coefficients ($\text{stretch}_x$, $\text{stretch}_y$) for each concentric ring—are captured through user interaction and serialized to JSON format. This structured data is transmitted to the detection backend via HTTP, where it is persisted to disk as a configuration file. Upon subsequent application launches, the detection backend automatically loads the persisted calibration parameters, eliminating the requirement for recalibration and ensuring calibration consistency across multiple gameplay sessions. 
 \subsection{Processing Calibration Data}
 As previously mentioned, the calibration data is saved in the detection backend as a JSON file. 
 \begin{lstlisting}[numbers=left,caption=Example of the calibration data JSON file, label=lst:calibration_data]
@@ -98,7 +97,7 @@ As previously mentioned, the calibration data is saved in the detection backend 
 ]
 \end{lstlisting}
 
-On launch of the detection backend, we create a virtual canvas which contains the active camera feed and draw the calibration rings on top of it.
+Upon backend initialization, the calibration parameters are loaded and used to construct a virtual coordinate grid overlaid on the live camera feed, enabling real-time visualization of the scoring region boundaries as a diagnostic aid during frame processing.
 
 \setauthor{\secondauthor}
 
@@ -305,15 +304,21 @@ The high importance of real-time updates and the high amount of logic being exec
 The frontend codebase is structured according to modern SvelteKit conventions, promoting modularity and maintainability. The primary entry point is the \texttt{src/routes/} directory, which defines the application's pages and navigation flow. Each major user-facing screen, such as setup, game, and statistics, is implemented as a dedicated route subfolder (e.g., \texttt{routes/game/}, \texttt{routes/setup/}, \texttt{routes/stats/}), with Svelte components encapsulating the UI and logic for each view. Reusable UI elements, including buttons, headers, and step counters, are organized within \texttt{src/comps/}, enabling consistent design and code reuse across the application. State management is handled via Svelte stores, located in \texttt{src/stores/}, which provide reactive data flows for player information, calibration state, and game rules. The calibration module is implemented as a dedicated component (\texttt{CameraCalibrator.svelte}) and associated store, facilitating interactive camera setup and persistence of calibration parameters. While the socket client and service logic are integrated within the page components and stores, the architecture supports real-time synchronization of game state and statistics through event-driven updates. This modular organization enables clear separation of concerns between presentation, state, and domain logic, supporting both rapid development and future extensibility.
  
 \subsubsection{Routing and Navigation Flow}
-TODO: Document the route structure and user flow between setup, game, statistics, and history screens.
+The frontend uses a hierarchical routing structure that leads users through a logical flow of configuration, gameplay, and then statistics viewing. The application root, represented by the route (\texttt{/}), is used as the initial configuration page, where users select the ruleset (301 or 501) and play variant (standard or alternate) for the game, which are then persisted in the application state via the reactive store named \texttt{rulesState}. Navigation to the route (\texttt{/setup}) enables player selection, in which users search and select the two players that are participating in the game, which are then persisted in the application state via the reactive store named \texttt{playerState}. The nested route (\texttt{/setup/camera}) enables the calibration of the camera prior to gameplay, in which users can interactively adjust the calibration settings (camera rings and coordinate system) and then asynchronously persist these changes in the detection backend. The game interface is available via the route (\texttt{/game}), in which the player information and ruleset are retrieved from the application state via the reactive stores, websocket connection is made, and real-time dart event handling is performed. Finally, the route (\texttt{/stats}) enables the viewing of player analytics and historical statistics, in which player-specific metric information can be queried and visualized. This navigation structure ensures invariant consistency because all reactive stores, namely, \texttt{playerState}, \texttt{rulesState}, and \texttt{calibrationStore}, are all subscribed at application initialization and are thus available across all routes, ensuring that data consistency is never an issue.
 
-\begin{lstlisting}[numbers=left,caption=Suggested route map listing skeleton for Marvin to complete, label=lst:frontend_route_map]
-// TODO: Replace with real route declarations from frontend source
-// /setup
-// /game
-// /statistics
-// /history
-// /calibration
+\begin{lstlisting}[numbers=left,caption=Frontend route hierarchy and state flow, label=lst:frontend_route_map]
+// Application route structure implemented via SvelteKit conventions
+/ (root)
+  +page.svelte         // Ruleset selection (301/501) -> rulesState store
+  +layout.svelte       // Global layout & store subscriptions
+  /setup
+    +page.svelte       // Player selection -> playerState store
+    /camera
+      +page.svelte     // Camera calibration -> calibrationStore
+  /game
+    +page.svelte       // Gameplay orchestration (socket, rules, rendering)
+  /stats
+    +page.svelte       // Win percentage, hit metrics, score distribution
 \end{lstlisting}
 
 \subsection{Virtual Dartboard Design}
@@ -371,43 +376,36 @@ Turn management is orchestrated through a combination of state variables and eve
 
 
 \subsubsection{State Consistency Across Views}
-The consistency of state between different views (e.g., setup, statistics, game) is ensured through centralization of all authoritative game data within Svelte stores, which are reactive and available throughout the application. Navigation between views does not require fetching data again or resetting state; instead, the current state is preserved and propagated, avoiding data artifacts and ensuring a seamless user experience. Any updates to the underlying data model are immediately reflected throughout all affected UI components, facilitating robust multi-view scenarios.
+The state consistency across different views (e.g., setup, statistics, game) is achieved by centralizing all authoritative game data under Svelte stores, which are automatically reactive and accessible across the application. There is no need to re-fetch data or re-initialize state when moving between views, as the current state is automatically preserved and propagated, thus avoiding data artifacts and providing a seamless user experience. Any changes to the underlying data model will automatically reflect across all affected UI views, thus supporting robust multi-view scenarios.
 
 \subsection{Statistics and Persistence}
 
 \subsubsection{Data Model for Match History}
-TODO: Explain how frontend interacts with stored entities (games, players, throws, aggregated stats) and how schema design supports statistics queries.
+The persistence layer is achieved through a relational schema with three main entities: \texttt{Player}, \texttt{Game}, and \texttt{Score}. The schema is normalized to enable efficient query operations on player-specific statistical data through indexing on the \texttt{player\_id} field. The hierarchical structure of the entities (Player $\leftarrow$ Game $\leftarrow$ Score) is advantageous when performing aggregation queries without having to perform costly joins on tables. The frontend interacts with the entities through REST calls that return filtered score sets for a given player, enabling computation of derived values on the client-side.
 
 \subsubsection{Statistics Computation Pipeline}
-TODO: Describe where and how metrics are computed (frontend/backend split), and discuss consistency/performance tradeoffs.
+The computation of statistical values is spread across frontend and backend code based on complexity and latency constraints. The backend computation of statistical values includes the computation of "win percentage" through aggregate queries on the \texttt{Game} entity. This is computed as the ratio of instances where \texttt{winner\_id} equals the player identifier and instances where the player participated as \texttt{player1} or \texttt{player2}. The computation of statistical values on the backend avoids redundant iteration over game objects and leverages the efficiency of database indexing. The computation of derivative values from the received sequence of scores is performed on the frontend. This includes computation of hit percentage (ratio of non-zero values to total throws), statistical mode (most frequently occurring non-zero value of scores), and cumulative point total and throws. This frontend computation avoids transmitting redundant data (only transmitting values of scores instead of game objects) and allows for immediate response to user interactions without requiring server round-trips.
 
 \subsubsection{Statistics Views and Interpretation}
-TODO: Document each player-facing metric (per-dart average, checkout percentage, trend charts, segment performance).
+The interface has five main metrics that are aggregated using the player’s match history. The \textit{Darts Thrown} metric represents the total count of throw events that were recorded for the player. The \textit{Total Score} metric represents the total count of points that were scored by the player in all throws. The \textit{Hit Percentage} metric represents the percentage of successful throws that were made by the player by dividing the total count of throws that did not yield a zero score by one hundred. The \textit{Most Common Hit} metric represents the most common type of hit that was targeted by the player. The \textit{Most Common Hit} metric represents the most common type of hit that was targeted by the player. The \textit{Win Percentage} metric represents the percentage of total games that were played by the player in which they were able to achieve a win by dividing the total count of games that were participated in by the player with a winner id matching the player by one hundred. The interface has a bar chart that represents the total count of scores that were achieved by players within ten most common non-zero scores that were achieved by players.
 
 \subsubsection{Error Handling for Missing/Corrupt Historical Data}
-TODO: Explain fallback UI states when statistics cannot be computed due to incomplete persistence records.
+The computation of statistical values has been equipped with defensive programming strategies that ensure graceful degradation when faced with situations involving incomplete or absent historical data. The client code has been designed to recognize when a set of scores is absent for a selected player by detecting that the score collection is falsy. In this situation, instead of propagating NaN values to the user interface, it displays a placeholder that represents the absence of historical data. The division by zero defensive programming strategy is used when computing the win percentage. The code has been designed to return a sentinel value of 0.0 when a player has zero games played instead of throwing a division by zero exception. The computation of the most common score is performed when there is a non-zero value within the set of scores. If all throws by a player are misses, then this computation is bypassed, ensuring that the initialized value is not propagated to the user interface. The Chart.js instance that is used to display the score distribution is deliberately destroyed and recreated each time the metric values are refreshed to ensure that stale data is not displayed when changing players.
 
-\begin{lstlisting}[numbers=left,caption=Suggested statistics section outline Marvin can replace with real formulas and queries, label=lst:stats_outline_todo]
-// TODO: Replace with actual implementation specifics
-// metric_1: per-dart average
-// metric_2: first-9 average
-// metric_3: checkout success rate
-// metric_4: score distribution by segment
+\begin{lstlisting}[numbers=left,caption=Statistics computation exemplar showing metric derivation from persistent score records, label=lst:stats_computation]
+// Backend: win percentage calculation via aggregate counting
+wins = COUNT(Game WHERE winner_id = player_id)
+total_games = COUNT(Game WHERE player1_id = player_id OR player2_id = player_id)
+win_percentage = wins / total_games * 100
+
+// Frontend: metrics derived from fetched score array
+let scores = await fetch("/score/{player_id}").json()
+let nonZero = scores.filter(s => s.score > 0)
+let hitPercentage = (nonZero.length / scores.length) * 100
+let totalScore = scores.reduce((sum, s) => sum + s.score, 0)
+let dartsThrown = scores.length
+let mostCommonScore = MODE(nonZero.map(s => s.score))
 \end{lstlisting}
-
-\subsection{Usability and UX Validation}
-
-\subsubsection{Prototype-to-Implementation Transition}
-TODO: Explain how wireframes/mockups evolved into production UI and what changed after user feedback.
-
-\subsubsection{Usability Feedback Sessions}
-TODO: Summarize feedback methodology (participants, tasks, metrics) and top findings.
-
-\subsubsection{Accessibility and Readability Considerations}
-TODO: Discuss text sizes, contrast, color choices, and interaction affordances for fast-paced game contexts.
-
-\subsubsection{Known UX Limitations and Future Improvements}
-TODO: Capture open UX issues and realistic next improvements.
 
 \subsection{Milestone Implementation Narrative}
 

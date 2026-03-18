@@ -183,24 +183,23 @@ Re-tune morphology to reconnect fragmented dart regions.
 Validate edge and out-of-bounds throws before locking values.
 \end{lstlisting}
 
+\setauthor{\firstauthor}
 \section{Frontend and Visualization Technologies}
 
 \subsection{Rendering Concepts}
 
 \subsubsection{Virtual Dartboard Canvas}
-The virtual dartboard is drawn to a special image buffer that is not used in the processing pipeline. Two different frames are processed in parallel in the image processing pipeline: the camera frame used for processing, and the display frame that is the combined effect of the camera feed and the overlay. This approach was taken after early versions showed that the processing pipeline would interpret the pixels used to draw the colored circles for the dartboard highlights as motion and generate false detections in the differencing stage.
 
 \subsubsection{User Interaction Mechanisms}
-Mouse callbacks associated with the display window control all user interactions during the calibration process. The mouse click is recorded in image coordinates and converted into board coordinates using the current state of calibration. The dragging operation allows for re-positioning of the boundaries of rings or a reference sector line during initial placement. The interaction events update only the calibration data structure and do not affect either of the image buffers.
 
 \subsection{Game State Representation}
 
 \subsubsection{Score Display}
-The score is updated immediately upon receiving a hit event from the detection module and is displayed on the display frame in the same compositing pass as the dartboard overlay. The detection result and score update are synchronized for the user, and since both are performed in the same frame processing cycle, no specific synchronization mechanism is required.
+
 
 \subsubsection{Game Mode Management}
-The system supports different game modes, such as 501 and Cricket, each represented as a state machine processing the hit events and keeping its score and turn state. The state machine is reset upon mode switching; however, this does not affect the detection module. This approach ensures complete decoupling of game logic and vision code, making debugging easier and enabling easier addition of other game modes without affecting other code layers.
 
+\setauthor{\secondauthor}
 \section{Alternative Technology Approaches}
 
 \subsection{Machine Learning-Based Detection}
