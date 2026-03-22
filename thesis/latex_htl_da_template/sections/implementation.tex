@@ -1,15 +1,13 @@
-\section{Overall System Pipeline}
-\subsection{End-to-End Architecture}
-
-\subsubsection{Data Flow Overview}
-TODO: ADD CONTENT HERE
-
 \setauthor{\firstauthor}
+\section{Data Flow Overview}
+The system's data flow architecture is designed to enable real-time dart detection and scoring through a distributed pipeline comprising a Python-based detection backend, a database persistence layer, and a SvelteKit frontend. Raw video frames are captured from a webcam and processed by the detection backend utilizing OpenCV2 for motion analysis and geometric calibration to identify dart impacts and compute corresponding segment scores. Upon detection of a valid throw, the backend emits WebSocket events encapsulating the scored segment data, which are asynchronously received by the frontend's game page component. The frontend subsequently applies game logic rules to update the current player state, decrement scores, and handle edge cases such as busts or invalid throws. Concurrently, the processed event data is transmitted to the database backend via REST API calls for persistent storage, associating each score with the active player and game session. This event-driven architecture ensures low-latency user feedback while maintaining data integrity for subsequent statistical analysis, with the separation of detection, logic processing, and persistence layers optimizing both performance and modularity.
+
 \section{Data Model and Persistence}
-Due to previously outlined specifications the system's database is designed to run on the user's local machine. This design choice allows us to forego the complexities of a social media like user system with profiles and authentication. 
-In turn the model stays incredibly simple with only 3 Entities: Game, Player and Score. The Player entity is only used to store the player's name and a unique identifier. 
-The Game entity stores the players involved and the current state of the game. The Score entity is used to connect everything together by storing the points scored in each turn and the player who scored them. 
-These scores are then evaluated on the statistics page, grouped by player.
+The system architecture aligns with the project constraints by relying on a locally hosted persistence layer in SQLite. This decision intentionally avoids introducing a full user management subsystem with authentication, thus reducing implementation complexity and reducing overall latency and transaction issues which could arise from a more complex database system. 
+
+The domain model comprises three core entities: \emph{Player}, \emph{Game}, and \emph{Score}. The \emph{Player} entity is defined by a unique identifier and a display name. The \emph{Game} entity records the participating players, the initial and current scoring state, and game metadata such as creation timestamp and selected ruleset. The \emph{Score} entity functions as a transactional record, associating individual turn outcomes with the corresponding player and game.
+
+These records form the basis for subsequent statistical analysis, where performance metrics are aggregated per player across completed matches.
 \begin{center}
 \captionsetup{type=figure,hypcap=false}
     \centering
@@ -17,7 +15,8 @@ These scores are then evaluated on the statistics page, grouped by player.
     \caption{PlantUML diagram of the data model}
 \end{center}
 \subsection{Game Rule Modeling}
-Luckily the difference in competetive dart rulesets is minimal and only affects the maximum amount of score a player is given. Therefore we don't have to adapt the game entity to accomidate different rulesets and can instead just limit the score field to either accepting 301 or 501.
+Competitive darts gameplay was constrained to the two conventional rulesets, 301 and 501, because these represent the dominant practice in the targeted application scenario. The selected approach is to normalize the game state by initializing player scores with a ruleset-dependent base value, thereby avoiding structural changes to domain models for each variant.
+
 \begin{lstlisting}[numbers=left,caption=Game creation endpoint limiting score based on ruleset, label=lst:game_creation]
 @router.post("/", response_model=GameDto)
 async def create_game(payload: GameCreate):
@@ -34,29 +33,21 @@ async def create_game(payload: GameCreate):
 \end{lstlisting}
 
 \subsubsection{Ruleset Selection}
-We decided to implement the two most common rulesets, 301 and 501. Other more casual rulesets like "Around the Clock" are usually very simple and don't require advanced counting systems to enjoy.
-
-
-\subsection{Database Schema Design}
-
-\subsubsection{Integrity Constraints}
-TODO: ADD CONTENT HERE
-
+The implementation deliberately only supports the 301 and 501 rulesets as explicit options. Less formal variants such as "Around the Clock" were not adopted due to their distinct scoring semantics and their limited relevance to the targeted statistical evaluation objectives.
 
 \section{Scoring and Game Logic}
-The general flow of dart scoring is as follows: Players alternate in throwing 3 darts while the system constantly subtracts the thrown score from the current total. If the resulting score is exactly zero, the player wins. If it goes below zero, it's considered a bust, and the player's score resets to what it was at the start of their turn. Additionally rulesets have variants like "double in" or "double out" which require the player to start or end on a double field respectively.
+The scoring logic adheres to established dart scoring rules. During a player's turn, the system decrements the current score by the detected segment value for each throw. A score of zero constitutes a win condition. If a throw results in a negative value, a \emph{bust} is triggered and the player's score reverts to its value at turn start. Additional rule variants (e.g., "double in" and "double out") are recognized as part of the design considerations, though in the current implementation these are handled by the UI state machine rather than by altering the persistence model.
+
 \subsubsection{Logic Responsibility Distribution}
-For the sake of statistical analysis and a more responsive UI, we decided to implement most of the game logic on the frontend. Even when the score busts, the shot should still be counted for stats and therefore should still be persisted. 
-Implementing this logic would be too convluted on the backend, involving rollbacks and unecassary transactions, and is instead handled by the frontend.
-Another reason why the frontend handles most of the logic is that the detection backend is seperated from the database backend. The frontend reacts to sockets from the detection backend and can then handle logic faster than if it were to run over the database backend.
+Architectural partitioning was motivated by latency and robustness requirements. Core score evaluation and game state transitions are computed client-side in the frontend application, while the backend provides persistent storage and replay-safe data synchronization. This distribution permits immediate user feedback, reduces round-trip delay, and minimizes backend transaction complexity when managing bust and undo interactions.
+
+In this design, all dart and scoring events are persisted regardless of bust status to preserve analytic fidelity, enabling later retrospective computation of per-throw statistics.
 
 \subsubsection{Handling Invalid Throws}
-A throw is counted as invalid if it lands outside of the board. The system can detect if the dart lands outside of it's calibrated rings, but struggles to see certain angles where the dart wouldn't get scored at all.
-For this edgecase we had to add a button which counted the current throw as a miss. To cover another edgecase where a throw is registered as a wrong score we added a undo last throw button, which deletes the last score from the database. 
+An invalid throw is defined as a detection event that corresponds to a point outside the calibrated dartboard region. These cases are surfaced in the interface as explicit "miss" actions rather than being ignored, ensuring that the historical event sequence remains complete for metrics extraction. For erroneous detections, the system includes an undo operation that removes the last persisted score entry and re-syncs current game state.
 
 \section{Calibration}
-The detection system works in 2 parts: first it plainly estimates the position of the dart tip in the image and then it subsequently uses a set of calibrated rings to determine the score based on the tip's position. Additonally we need to get the position of the "lines" between the sections of the dart board. This works very similiarly to the ring calibration, and requires the user to position them between the 20 and 1 position. 
-The rings and lines have to be manually calibrated by the user due to differences in dartboards and camera position and angle. In our development time we used opencv to calibrate the rings in the debug window directly and were pretty happy with the controls and feel.
+The detection process comprises two stages. The first is to determine the position of the dart tip with respect to the captured frame. The second is to determine the score value from the position of the dart tip, which is mapped to a set of pre-calibrated rings that define the scoring regions of the dartboard. The position of the radial lines dividing the sectors of the dartboard must also be calibrated. The process is analogous to the ring calibration process, which requires user intervention to align the lines between the 20 and 1 sector regions. The manual process is necessary because the geometry of the dartboard, camera position, and viewing angle differ from one scenario to another. The use of OpenCV was necessary to enable interactive ring calibration in a debug window, which proved to provide a satisfactory level of control responsiveness.
 
 \vspace{\baselineskip}
 
@@ -295,15 +286,13 @@ if (tip is None or centroid is None) and isinstance(all_pts, np.ndarray) and all
 
 \section{Frontend and Visualization}
 
-\subsection{Web Application Architecture}
+\subsection{Technology Stack and Rationale}
+The high importance of real-time updates and the high amount of logic being executed on the frontend encouraged us to choose Svelte-Kit, as it compiles directly into highly optimized vanilla JavaScript with a minimal runtime footprint. Vite was also chosen as the build tool because of its integration with Svelte and fast hot module replacement, which was a must-have for rapid development. For state management Svelte's stores with a small add-on library for local storage persistence were chosen, as the state of the application is simple and doesn’t warrant the complexity of a more advanced state management library. The choice of executing most of the game logic on the frontend was influenced by the need for instant responses to user and socket events, as well as the desire to reduce the burden on the backend and minimize latency for updating the game state.
 
-\subsubsection{Technology Stack and Rationale}
-The high importance of real-time updates and the high amount of logic being executed on the frontend encouraged us to choose Svelte-Kit, as it compiles directly into highly optimized vanilla JavaScript with a minimal runtime footprint. Vite was also chosen as the build tool because of its integration with Svelte and fast hot module replacement, which was a must-have for rapid development. For state management, we chose Svelte's stores with a small add-on library for local storage persistence, as the state of the application is simple and doesn’t warrant the complexity of a more advanced state management library. The choice of executing most of the game logic on the frontend was influenced by the need for instant responses to user and socket events, as well as the desire to reduce the burden on the backend and minimize latency for updating the game state.
-
-\subsubsection{Application Module Structure}
+\subsection{Application Module Structure}
 The frontend codebase is structured according to modern SvelteKit conventions, promoting modularity and maintainability. The primary entry point is the \texttt{src/routes/} directory, which defines the application's pages and navigation flow. Each major user-facing screen, such as setup, game, and statistics, is implemented as a dedicated route subfolder (e.g., \texttt{routes/game/}, \texttt{routes/setup/}, \texttt{routes/stats/}), with Svelte components encapsulating the UI and logic for each view. Reusable UI elements, including buttons, headers, and step counters, are organized within \texttt{src/comps/}, enabling consistent design and code reuse across the application. State management is handled via Svelte stores, located in \texttt{src/stores/}, which provide reactive data flows for player information, calibration state, and game rules. The calibration module is implemented as a dedicated component (\texttt{CameraCalibrator.svelte}) and associated store, facilitating interactive camera setup and persistence of calibration parameters. While the socket client and service logic are integrated within the page components and stores, the architecture supports real-time synchronization of game state and statistics through event-driven updates. This modular organization enables clear separation of concerns between presentation, state, and domain logic, supporting both rapid development and future extensibility.
  
-\subsubsection{Routing and Navigation Flow}
+\subsection{Routing and Navigation Flow}
 The frontend uses a hierarchical routing structure that leads users through a logical flow of configuration, gameplay, and then statistics viewing. The application root, represented by the route (\texttt{/}), is used as the initial configuration page, where users select the ruleset (301 or 501) and play variant (standard or alternate) for the game, which are then persisted in the application state via the reactive store named \texttt{rulesState}. Navigation to the route (\texttt{/setup}) enables player selection, in which users search and select the two players that are participating in the game, which are then persisted in the application state via the reactive store named \texttt{playerState}. The nested route (\texttt{/setup/camera}) enables the calibration of the camera prior to gameplay, in which users can interactively adjust the calibration settings (camera rings and coordinate system) and then asynchronously persist these changes in the detection backend. The game interface is available via the route (\texttt{/game}), in which the player information and ruleset are retrieved from the application state via the reactive stores, websocket connection is made, and real-time dart event handling is performed. Finally, the route (\texttt{/stats}) enables the viewing of player analytics and historical statistics, in which player-specific metric information can be queried and visualized. This navigation structure ensures invariant consistency because all reactive stores, namely, \texttt{playerState}, \texttt{rulesState}, and \texttt{calibrationStore}, are all subscribed at application initialization and are thus available across all routes, ensuring that data consistency is never an issue.
 
 \begin{lstlisting}[numbers=left,caption=Frontend route hierarchy and state flow, label=lst:frontend_route_map]
@@ -321,9 +310,7 @@ The frontend uses a hierarchical routing structure that leads users through a lo
     +page.svelte       // Win percentage, hit metrics, score distribution
 \end{lstlisting}
 
-\subsection{Virtual Dartboard Design}
-
-\subsubsection{Rendering Strategy}
+\subsection{Rendering Strategy}
 The rendering of the virtual dartboard and its interactive overlays is accomplished using the browser's native HTML5 canvas API, orchestrated from within Svelte components. Overlays such as sector boundaries, calibration rings, and throw markers are drawn programmatically, enabling dynamic updates in response to game events. Throw markers are rendered as layered graphical primitives (e.g., circles, lines, and text) on top of the static board image, with their positions determined by the coordinates passed from the socket. This approach was chosen over alternatives such as SVG or DOM-based rendering due to the superior performance and lower latency of canvas for frequent, real-time updates, as well as its ability to efficiently handle complex, pixel-level manipulations required for accurate hit visualization.
 
 \subsubsection{Coordinate Mapping Between View and Backend}
@@ -460,17 +447,12 @@ Optimization of the angle selection process was carried out through empirical ev
 
 It was observed through experimental results that the most balanced approach for the camera perspective appears to be at an intermediate $45^{\circ}$ orientation between the two extremes. When using low-resolution camera systems in which tip detection tends to be unstable, tilting the camera further toward the board at an angle of $50^{\circ}$ to $60^{\circ}$ appears to increase the robustness of the system, in which the end of the dart shaft tends to be more readily utilized as the terminal end for more stable performance.
 
-\setauthor{\firstauthor}
-
 
 \section{System Integration}
 \subsection{Hardware-Software Interaction}
 
 \subsubsection{Pipeline Latency}
-TODO: ADD CONTENT HERE
-
 
 \subsection{System Limitations}
 
 \subsubsection{Environmental Dependencies}
-TODO: ADD CONTENT HERE
