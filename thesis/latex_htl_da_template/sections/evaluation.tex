@@ -9,9 +9,9 @@ Lighting was also recognized as a key factor to ensure proper detection. Experim
 Under this new lighting condition, contour detection was more stable during successive throws, especially around areas close to ring boundaries where small variations in lighting would normally cause variations in tip position. Errors observed under this new lighting condition were mainly due to calibration issues.
 
 
-\subsection{Camera Setup}
+\subsection{Camera Setup}\label{subsec:eval_camera_setup}
 
-\subsubsection{Distance, Angle, and FPS}
+\subsubsection{Distance, Angle, and FPS}\label{subsubsec:eval_camera_distance_angle_fps}
 All evaluation runs were performed with the following camera configuration:
 
 \begin{itemize}
@@ -67,7 +67,7 @@ Qualitatively, the robustness of the system was observed in the impacts made at 
 \subsection{Sector Classification Accuracy}
 
 \subsubsection{False Positive Rate}
-Across extensive practical throwing sessions (including central hits, boundary-near hits, and out-of-board throws), the system achieved approximately 80\% sector-level classification accuracy.
+Across extensive practical throwing sessions (including central hits, boundary-near hits, and out-of-board throws), sector-level classification remained stable enough for recreational play. The quantified accuracy values are reported in Section~\ref{sec:accuracy_consolidation}, where setup-specific outcomes and computed accuracy values are listed in a structured format.
 
 Most misclassifications belonged to one of three categories:
 
@@ -96,6 +96,118 @@ The first two categories provided results that, although incorrect, were reasona
 	\end{tabularx}
 \end{center}
 
+\section{Accuracy Consolidation}\label{sec:accuracy_consolidation}
+
+Accuracy is reported at sector level and is based on labeled throws from the evaluation session described in Table~\ref{tab:evaluation_setup_sheet}. Camera placement constraints that influence classification stability are discussed in Section~\ref{subsec:eval_camera_setup}.
+
+For each setup, accuracy is calculated as:
+
+\[
+\mathrm{Accuracy} = \frac{N_{\mathrm{correct}}}{N_{\mathrm{total}}} \cdot 100\%
+\]
+
+\vspace{\baselineskip}
+
+
+\subsection{Setup A: Measured Outcomes}
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+	\centering
+	\caption{Outcome counts for Setup A.}
+	\label{tab:accuracy_setup_a_outcomes}
+	\begin{tabularx}{\linewidth}{@{}X c X@{}}
+		\toprule
+		\textbf{Outcome Category} & \textbf{Count} & \textbf{Interpretation} \\
+		\midrule
+		Correctly detected & 43 & Correct sector classification \\
+		Wrong edge cases & 7 & Dart tip not correctly localized or poorly calibrated \\
+		Occluded by another dart & 2 & Visibility limitation due to overlap \\
+		Not detected because of motion & 3 & Motion-related detection failure \\
+		\midrule
+		\textbf{Total throws} & \textbf{55} & Sum of all outcome categories \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\vspace{\baselineskip}
+
+
+\noindent \textbf{Computed real accuracy (Setup A):}
+\[
+\frac{43}{55} \cdot 100\% = 78.2\%
+\]
+
+\vspace{\baselineskip}
+
+
+\subsection{Setup B: Alternative Setup}
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+	\centering
+	\caption{Setup B specification sheet.}
+	\label{tab:accuracy_setup_b_spec}
+	\begin{tabularx}{\linewidth}{@{}X X@{}}
+		\toprule
+		\textbf{Parameter} & \textbf{Value} \\
+		\midrule
+		Camera model & TRUST EXIS Webcam \\
+		Resolution & $640 \times 480$ \\
+		FPS during test & 24 \\
+		Camera angle & $45^{\circ}$ \\
+		Camera distance & 65 cm \\
+		Lighting & Same ring light \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\vspace{\baselineskip}
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+	\centering
+	\caption{Outcome counts for Setup B.}
+	\label{tab:accuracy_setup_b_outcomes}
+	\begin{tabularx}{\linewidth}{@{}X c X@{}}
+		\toprule
+		\textbf{Outcome Category} & \textbf{Count} & \textbf{Interpretation} \\
+		\midrule
+		Correctly detected & 29 & Correct sector classification \\
+		Wrong edge cases & 7 & Dart tip not detected due to limited resolution \\
+		Occluded by another dart & 2 & Visibility limitation due to overlap \\
+		Not detected because of motion & 10 & Camera mount too unstable \\
+		\midrule
+		\textbf{Total throws} & \textbf{48} & Sum of all outcome categories \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\vspace{\baselineskip}
+
+\noindent \textbf{Computed real accuracy (Setup B):}
+\[
+\frac{29}{48} \cdot 100\% = 60.4\%
+\]
+
+\vspace{\baselineskip}
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+	\centering
+	\caption{Overall accuracy summary across both setups.}
+	\label{tab:accuracy_overall_summary}
+	\begin{tabularx}{\linewidth}{@{}X c c c@{}}
+		\toprule
+		\textbf{Scope} & \textbf{Total Throws} & \textbf{Correct} & \textbf{Computed Accuracy (\%)} \\
+		\midrule
+		Setup A & 55 & 43 & 78.2 \\
+		Setup B & 48 & 29 & 60.4 \\
+		\textbf{Combined} & \textbf{103} & \textbf{72} & \textbf{70} \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
 \section{Edge Case Analysis}
 
 \subsection{Bounce-Outs}
@@ -104,7 +216,7 @@ It is not possible to detect these with the current pipeline. The detector assum
 This is a known methodological limitation as opposed to a programming error. The development of a proper bounce-out detector would require further event modeling, sound/vibration detection, or multi-angle verification.
 
 \subsection{Occluded Darts}
-Extreme cases of occlusion were rare in the given board configuration but are relevant to a practical environment. If a new dart is thrown into an area close to an already-embedded dart, then contour union can cause a decrease in dart tip separability. The merged contour technique currently used is a significant enhancement to the algorithm to increase robustness to fragmented dart contours. However, it also has a potential to cause ambiguity between densely grouped darts.
+Extreme cases of occlusion were rare in the given board configuration but are relevant in practical environments. If a new dart is thrown into an area close to an already embedded dart, contour union can reduce dart-tip separability. The merged-contour technique currently used is a significant enhancement to increase robustness against fragmented dart contours. However, it can also cause ambiguity between densely grouped darts.
 
 From an empirical standpoint, it was determined that these types of situations were most likely to cause issues with shots landing in near-adjacent segment areas rapidly fired in succession.
 
@@ -144,8 +256,6 @@ Observed failures were repeatable and can be grouped as follows:
 	\item \textbf{Bounce-out behavior:} Non-persistent impacts are not represented in the final static frame and are therefore missed.
 	\item \textbf{Mount vibration:} If the camera is mechanically coupled to board vibrations, global frame motion causes detector confusion and can suppress valid detections.
 \end{itemize}
-
-Overall, the evaluation confirms that the current pipeline is viable for recreational automatic scoring, with accuracy around 80\% in real-world play and clearly identified technical limitations for future improvement.
 
 \subsection{Reproducibility Checklist}
 

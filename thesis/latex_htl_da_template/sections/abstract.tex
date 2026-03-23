@@ -3,11 +3,10 @@
 \end{spacing}
 \begin{wrapfigure}{r}{0.3\textwidth}
     \begin{center}
-      \includegraphics[width=0.2\textwidth]{pics/question_mark.png}
+      \includegraphics[width=0.2\textwidth]{pics/HitscanTransparent@4x.png}
     \end{center}
 \end{wrapfigure}
-Brief summary of our amazing work. In English.
-This is the only time we have to include a picture within the text.
-The picture should somehow represent your thesis.
-This is untypical for scientific work but required by the powers that are.
-\lipsum[6]
+
+In this thesis, a low-cost automatic scoring system for steel-tip darts is introduced. This system utilizes a single consumer camera and a web-based user interface. The system aims to retain the traditional experience of playing darts while maintaining automatic scoring. The system utilizes classical computer vision techniques based on OpenCV. The system processes video feed to locate the dart tip's coordinates. This information is then mapped to the dartboard's different regions. Both manual and marker-based approaches are considered to ensure ease of use and geometric accuracy. The system's software design utilizes a Python-based detection system, WebSocket event streaming, and a SvelteKit-based web application with storage. 
+
+The system's performance was tested in a controlled environment. The system was accurate in 70\% of 103 throws at sector level. The system was accurate in 78.2\% in the primary configuration and 60.4\% in the low-resolution configuration. The system's performance was affected by the low resolution. This shows that the system is suitable in a home setting when factors such as camera stability and lighting conditions are well controlled. The system's limitations include accuracy at the boundary regions, high vibration conditions, and bounce-out cases. The system's performance shows that it is possible to design a deterministic single-camera system. This system can operate in real time without the use of specialized hardware.

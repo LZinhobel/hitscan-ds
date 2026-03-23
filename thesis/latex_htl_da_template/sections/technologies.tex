@@ -15,7 +15,7 @@ The responsiveness of the pipeline is maintained by making the more expensive op
 
 \subsubsection{Single-Camera Assumption}
 The system assumes the availability of a single camera.
-By restricting the problem domain to a single-camera setup, a conscious decision has been made. This eliminates the synchronization problem, ensures manageability of the calibration process for the end user, and minimizes material costs to a single USB camera module. In practice, spatial reasoning is restricted to a single image plane. A hand occluding a dart or a previously lodged dart cannot be geometrically reasoned. However, this is acceptable for the problem domain since the dart tip is always visible from a frontal overhead position at the time of impact.
+Restricting the problem domain to a single-camera setup was a conscious decision. This eliminates synchronization problems, keeps the calibration process manageable for the end user, and minimizes hardware costs to a single USB camera module. In practice, spatial reasoning is limited to a single image plane. A hand occluding a dart or a previously lodged dart cannot be resolved geometrically. However, this is acceptable for the problem domain because the dart tip is typically visible from a frontal overhead position at the time of impact.
 
 \subsubsection{Static Mount Requirements}
 This detection approach is predicated on a static camera position between the time of calibration and use. This is necessary for the background model, the stored ArUco pose, and the pixel-to-board homography. Any physical movement of the camera, even slight, invalidates the stored calibration and causes a scoring problem due to a systematic error. A startup routine is implemented to ensure the presence of a valid stored calibration. If this is missing or marked as invalid, the system prompts a recalibration routine.
@@ -38,7 +38,7 @@ The interpreter imposes a certain overhead on the execution of the Python byteco
 
 
 \subsubsection{Performance Considerations}
-The primary optimization performed in the project was the implementation of the region of interest cropping. By limiting the processing to the region of the image where the dartboard is, the amount of pixels processed was reduced by about 60 to 70 percent compared to the full frame \cite{Viola2001}. Additionally, the output buffers are pre-filled and passed to the OpenCV in-place operations, which avoids the heap allocation overhead. In the case where the early exit is taken and no motion is detected, the pipeline completes very quickly, in less than 10 milliseconds on typical hardware, which leaves plenty of time for the user interface thread.
+The first optimization step for the project involved the implementation of region of interest cropping. This involved limiting the processing of the image to the region of interest, which contains the dartboard. This resulted in a reduction of between 60-70 percent of the total number of pixels processed compared to the whole frame \cite{Viola2001}. The output buffers are also pre-filled, which are then passed as arguments for OpenCV's in-place processing, thus eliminating the need for heap allocation. In the event that the early exit condition is met, with no motion detected, the processing pipeline takes a short time, less than 10 milliseconds, thus giving ample time for the UI thread.
 
 \begin{center}
 \captionsetup{type=table,hypcap=false}
@@ -153,7 +153,7 @@ describe the outline of each region in the image.
 
 
 \subsubsection{Filtering of Irrelevant Regions}
-The candidate regions are filtered through four different filters before any tip coordinates are calculated. The first filter is area; regions with an area smaller than the empirically derived minimum or larger than the maximum possible cross-section are discarded. The second filter is the aspect ratio; highly elongated shapes are not likely to be the dart tip viewed from the top. The third filter is the solidity of the shape, defined as the area enclosed by the contour divided by the area of the convex hull. Irregular shapes due to reflections or the cables have lower solidity values. The fourth filter is the spatial location; regions with centroids outside the known board region are not processed further. The number of regions remaining at this stage for each frame is zero or one or very rarely two, for the tip localization to take place.
+The regions are filtered by four checks before any of the tip coordinates are computed. The first check is that of area. Regions that are either below the empirically determined minimum or exceed the maximum possible cross-section area are eliminated. The second check involves the aspect ratio. Highly elongated regions are unlikely to correspond to a dart tip when viewed from above. The third check involves the shape solidity, which is given by the ratio of the contour area to the area of the convex hull. Irregular shapes resulting from reflections or cables have lower solidity values. The fourth check involves the spatial location of the region. Regions whose centroids are outside the known region of the board are eliminated. The number of regions that remain at this point per frame is usually either zero or one, occasionally two, before the tip localization.
 
 \begin{center}
 \captionsetup{type=table,hypcap=false}
