@@ -14,17 +14,16 @@ The Web-Based Score Display subsystem was developed to furnish real-time visuali
 \subsection{Performance of Motion-Based Detection}
 
 \subsubsection{Strengths}
-TODO: ADD CONTENT HERE
+Under optimal environmental conditions, the motion-based detection algorithm achieves satisfactory accuracy for identifying dart impacts and determining corresponding score values in real-time. The system successfully processes hit detection with adequate precision and updates score visualization without manual intervention, thereby satisfying the primary functional requirements of the project. This performance demonstrates the viability of computer vision approaches for automated dart recognition without requiring specialized hardware infrastructure.
 
 \subsubsection{Limitations}
-TODO: ADD CONTENT HERE
-
+Performance degradation occurs when environmental factors compromise detection reliability, specifically under conditions of inadequate illumination, high surface reflectivity, and overlapping dart trajectories. The motion-based approach exhibits strong dependence on clear visual contrast. When such contrast is reduced through obscuration or distortion, detection accuracy diminishes substantially. Furthermore, the algorithm exhibits reduced capability when processing proximate impacts, potentially resulting in misclassification of scoring zones when multiple darts land in close spatial proximity.
 
 \section{Reflection on Development Process}
 \subsection{Abandoned Approaches}
 
 \subsubsection{Marker-Based Calibration}
-TODO: ADD CONTENT HERE
+ArUco markers were initially integrated into the system architecture to establish calibration parameters for dartboard boundary detection. However, the approach proved insufficient due to sensitivity to variations in camera positioning and viewing distance. The marker-based calibration methodology demonstrated inadequate reliability across diverse deployment configurations and was consequently replaced by manual calibration procedures, which provide greater stability and user control. 
 
 
 \section{Potential Enhancements}
