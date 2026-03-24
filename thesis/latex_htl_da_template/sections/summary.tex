@@ -1,12 +1,13 @@
 \setauthor{\firstauthor}
 \section{Review of Objectives}
+The primary objective was to develop a cost-effective system capable of automatically determining dart gameplay scores through the utilization of readily available hardware, specifically a standard webcam and dartboard. The system architecture emphasizes functional simplicity and operates as a self-contained unit without networked dependencies. 
 \subsection{Functional Goals}
 
 \subsubsection{Automatic Hit Detection}
-TODO: ADD CONTENT HERE
+The Automatic Hit Detection component was implemented utilizing computer vision methodologies to localize dart positions on the board and determine corresponding scores. The implementation encompasses real-time video frame acquisition, application of image processing algorithms for dart localization, and spatial mapping to discrete scoring zones. The resulting algorithm demonstrates competitive accuracy in hit detection; however, performance variability remains influenced by environmental factors, particularly lighting conditions and surface reflectivity. 
 
 \subsubsection{Web-Based Score Display}
-TODO: ADD CONTENT HERE
+The Web-Based Score Display subsystem was developed to furnish real-time visualization of game scores via a web-based interface. The implementation encompasses a web application architecture that receives asynchronous score updates from the detection module and presents them in an accessible format. The interface facilitates intuitive score tracking and progress monitoring during gameplay. The current implementation successfully delivers real-time score updates. However, further enhancements are possible to improve user experience and accuracy under varying conditions.
 
 
 \section{Technical Evaluation}
@@ -26,14 +27,16 @@ TODO: ADD CONTENT HERE
 TODO: ADD CONTENT HERE
 
 
-\section{Future Work}
-\subsection{Potential Enhancements}
+\section{Potential Enhancements}
 
 \subsubsection{Machine Learning Integration}
-TODO: ADD CONTENT HERE
+Reinforcement learning approaches represent a promising avenue for future enhancement, particularly in addressing challenging scenarios such as overlapping dart trajectories and suboptimal lighting conditions. However, the dataset requirements for training robust deep learning models exceed the practical constraints of this project scope. The substantial volume of annotated training data and computational resources necessary for an effective model rendered this approach infeasible for a small development team. Consequently, the implementation prioritized mathematically-grounded computer vision techniques as a pragmatic alternative that achieves competitive performance without the infrastructure demands of machine learning frameworks.
 
 \subsubsection{Improved Hardware Mounting}
-TODO: ADD CONTENT HERE
+Currently, the system uses a tripod-mounted camera, which offers flexibility but is sensitive to positioning errors and height limitations. During earlier development, we attempted a wall-mounted arm solution but encountered vibration issues that significantly affected accuracy. While a custom mounting design could improve stability and reliability, this type of mechanical engineering work falls outside the project's scope. Future improvements should explore mounting solutions that reduce vibration while remaining easy for users to set up.
+
+\subsubsection{Additional Frontend Customization}
+Extending frontend capabilities to consume data from the detection backend would enable parameter adjustments including threshold modification and focus control, thereby improving adaptability across various environmental conditions. This approach would allows enhanced system usability through visual feedback mechanisms, permitting users to observe the immediate effects of calibration adjustments. Real-time visualization of parameter effects would significantly streamline the calibration workflow, reducing the iterative cycles required for optimal system configuration and improving the overall user experience during initial setup and maintenance operations.
 
 
 \section{Final Conclusion}
