@@ -1,42 +1,82 @@
 \setauthor{\firstauthor}
 \section{Review of Objectives}
-The primary objective was to develop a cost-effective system capable of automatically determining dart gameplay scores through the utilization of readily available hardware, specifically a standard webcam and dartboard. The system architecture emphasizes functional simplicity and operates as a self-contained unit without networked dependencies. 
-\subsection{Functional Goals}
+The overall aim of this thesis has been to integrate a low-cost system for automatic scoring within a game of steel-tip darts, eliminating manual score tracking but retaining the “feeling” of a traditional game. This has been successfully accomplished through a completed prototype.
 
-\subsubsection{Automatic Hit Detection}
-The Automatic Hit Detection component was implemented utilizing computer vision methodologies to localize dart positions on the board and determine corresponding scores. The implementation encompasses real-time video frame acquisition, application of image processing algorithms for dart localization, and spatial mapping to discrete scoring zones. The resulting algorithm demonstrates competitive accuracy in hit detection; however, performance variability remains influenced by environmental factors, particularly lighting conditions and surface reflectivity. 
+While there is a high degree of coupling within this project, there is a distinct separation of modules in the end. This has been useful for both maintenance and performance.
 
-\subsubsection{Web-Based Score Display}
-The Web-Based Score Display subsystem was developed to furnish real-time visualization of game scores via a web-based interface. The implementation encompasses a web application architecture that receives asynchronous score updates from the detection module and presents them in an accessible format. The interface facilitates intuitive score tracking and progress monitoring during gameplay. The current implementation successfully delivers real-time score updates. However, further enhancements are possible to improve user experience and accuracy under varying conditions.
+\subsection{Functional Objectives}
 
+\subsubsection{Web Interface and Real-Time Interaction}
+One of the key objectives of this project has been to design a system such that it can be interacted with through a variety of devices within a local environment, yet present a single source of truth for users. This has been accomplished through a completed frontend, where a variety of route-based workflows, reactive stores, and websockets have been implemented to present a seamless experience to users.
+
+While interacting with this system, it has also been important to consider how users will interact with it under suboptimal conditions. This has been accomplished through a variety of states within a UI, ensuring operator confidence under a variety of scenarios.
+
+This has been an important part of ensuring that real-time interaction is not simply a transport-layer concern but also a concern for states and interfaces.
+
+\subsubsection{Game Logic and State Management}
+Support for 301/501 gameplay rules, bust handling, and checkout constraint checking was provided through the frontend ruleset engine. The choice of using deterministic state transitions for modeling the game resulted in a much simpler and more deterministic set of test cases. In addition, there was less ambiguity in edge cases since everything is driven through ordered throw events.
+
+From a software engineering point of view, this part of the system illustrates how simple reactive state transitions are adequate for modeling simple reactive systems where transitions are explicit. In this project, there was no need for using complex orchestration tools for creating a robust state machine.
+
+\subsubsection{Statistics and Persistence-Oriented Features}
+Another goal for this thesis was to extend the system beyond simple scoring and into more useful retrospective analysis. As a result, the final implementation includes a persistent match history model and analytics views with useful metrics.
+
+The chosen split computation strategy for this problem was found to be useful. Relational aggregations are performed backend-side, and lightweight derivative metrics are performed frontend-side. This results in compact network traffic and allows for immediate update of the UI when switching between players or revisiting previous sessions. In addition, defensive programming for handling sparse or missing data points was useful in preventing undefined results in the analytics view.
 
 \section{Technical Evaluation}
-\subsection{Performance of Motion-Based Detection}
+\subsection{System-Level Observations}
+The evaluation chapter illustrates how subsystem quality is highly context-dependent. In particular, the quality of the detection results is highly dependent on the quality of the physical setup, whereas the quality of the frontend is highly dependent on clear semantics and correction workflows. The overall quality of the finished system is best achieved under circumstances where both factors are met.
 
-\subsubsection{Strengths}
-Under optimal environmental conditions, the motion-based detection algorithm achieves satisfactory accuracy for identifying dart impacts and determining corresponding score values in real-time. The system successfully processes hit detection with adequate precision and updates score visualization without manual intervention, thereby satisfying the primary functional requirements of the project. This performance demonstrates the viability of computer vision approaches for automated dart recognition without requiring specialized hardware infrastructure.
+A practical consequence of this is that users experience end-to-end quality through continuity of interaction, not through the raw results of the algorithms. This was a particularly relevant concept for the recreational deployment goals, where trust of the overall system is more important than individual benchmark results. 
 
-\subsubsection{Limitations}
-Performance degradation occurs when environmental factors compromise detection reliability, specifically under conditions of inadequate illumination, high surface reflectivity, and overlapping dart trajectories. The motion-based approach exhibits strong dependence on clear visual contrast. When such contrast is reduced through obscuration or distortion, detection accuracy diminishes substantially. Furthermore, the algorithm exhibits reduced capability when processing proximate impacts, potentially resulting in misclassification of scoring zones when multiple darts land in close spatial proximity.
+\subsection{Strengths of the Final Architecture}
+The final architecture offers four strengths:
+\begin{itemize}
+	\item \textbf{Low Operational Barrier}: The solution only requires consumer-grade hardware and local browser clients.
+	\item \textbf{Fast Interaction Loop}: The solution is event-driven, allowing for rapid gameplay response.
+	\item \textbf{Recoverability}: The solution includes correction workflows and error states, limiting the impact of detection errors.
+	\item \textbf{Analytical Value}: The solution allows for the interpretation of gameplay statistics beyond the simple result.
+\end{itemize}
 
-\section{Reflection on Development Process}
-\subsection{Abandoned Approaches}
+\subsection{Remaining Constraints}
+While the solution has been successful, there are several constraints. Vision reliability can be compromised by extreme geometric or lighting irregularities. The solution is also optimized for local use, not for a more robust distribution. In terms of application, the solution’s analytical depth is limited, although this is a conscious choice for simplicity and response. These constraints, although present, are well beyond the scope of this project. 
 
-\subsubsection{Marker-Based Calibration}
-ArUco markers were initially integrated into the system architecture to establish calibration parameters for dartboard boundary detection. However, the approach proved insufficient due to sensitivity to variations in camera positioning and viewing distance. The marker-based calibration methodology demonstrated inadequate reliability across diverse deployment configurations and was consequently replaced by manual calibration procedures, which provide greater stability and user control. 
+\section{Reflection on Division of Work}
+The appendix established a collaboration model where web interface, vision, statistics, and persistence are primarily the first author’s responsibility, and camera/hardware, as well as detection, are primarily the second author’s responsibility. The structure of this document now more clearly reflects this model, where discussion of the frontend, integration, and statistics is primarily the first author’s responsibility, and discussion of the camera, hardware, and detection is primarily the second author’s responsibility.
 
+This alignment has helped to improve the technical coherence and traceability of the contributions. It has also reduced the ambiguity in the mixed sections, where software integration topics like event contracts, synchronization, and correction workflows are now included in the first author domain, while physically constrained detection behavior remains in the second author domain.
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+\begin{tabularx}{\linewidth}{@{}X X@{}}
+\toprule
+\textbf{Focus Area} & \textbf{Implemented Outcome} \\
+\midrule
+Web interface and interaction flow & Multi-route browser UI for setup, game, and analytics with reactive state continuity \\
+Real-time event presentation & WebSocket-driven score updates with explicit connection/error feedback \\
+Game rules and state transitions & Deterministic handling of 301/501 logic, bust rollback, checkout checks, and undo \\
+Statistics and persistence integration & Persistent match history with interpretable player-centric metrics and robust empty-data handling \\
+\bottomrule
+\end{tabularx}
+\caption{Contribution-oriented perspective on implemented software outcomes.}
+\label{tab:summary_contribution_focus}
+\end{center}
 
 \section{Potential Enhancements}
 
-\subsubsection{Machine Learning Integration}
-Reinforcement learning approaches represent a promising avenue for future enhancement, particularly in addressing challenging scenarios such as overlapping dart trajectories and suboptimal lighting conditions. However, the dataset requirements for training robust deep learning models exceed the practical constraints of this project scope. The substantial volume of annotated training data and computational resources necessary for an effective model rendered this approach infeasible for a small development team. Consequently, the implementation prioritized mathematically-grounded computer vision techniques as a pragmatic alternative that achieves competitive performance without the infrastructure demands of machine learning frameworks.
+\subsubsection{Richer Analytics and Session Intelligence}
+Further improvements to the software could be made to the statistics module, for example, by providing rolling averages, distribution of checkouts in the checkout class, and consistency trends in specific segments. A particularly interesting potential is in the progression analysis between sessions, in which players can compare their recent performance to their own baseline.
 
-\subsubsection{Improved Hardware Mounting}
-Currently, the system uses a tripod-mounted camera, which offers flexibility but is sensitive to positioning errors and height limitations. During earlier development, we attempted a wall-mounted arm solution but encountered vibration issues that significantly affected accuracy. While a custom mounting design could improve stability and reliability, this type of mechanical engineering work falls outside the project's scope. Future improvements should explore mounting solutions that reduce vibration while remaining easy for users to set up.
+\subsubsection{Operator-Centric Configuration UX}
+Tuning and calibration of the game and the environment could be significantly simplified through a unified operator interface for live confidence, thresholds, and environment diagnostics. Instead of just providing end-state results, such an interface would allow for early detection of problematic states and reduce the calibration time for operators without game expertise.
 
-\subsubsection{Additional Frontend Customization}
-Extending frontend capabilities to consume data from the detection backend would enable parameter adjustments including threshold modification and focus control, thereby improving adaptability across various environmental conditions. This approach would allows enhanced system usability through visual feedback mechanisms, permitting users to observe the immediate effects of calibration adjustments. Real-time visualization of parameter effects would significantly streamline the calibration workflow, reducing the iterative cycles required for optimal system configuration and improving the overall user experience during initial setup and maintenance operations.
+\subsubsection{Enhanced Event Integrity}
+For more general application scenarios, event integrity can also be provided using sequence identifiers, action logs, and reconciliation processes after reconnecting. Such features are not necessarily required for local usage in a recreational context but may become important in noisier network environments or in multi-session usage scenarios where sessions may be long-running.
 
+\subsubsection{Machine Learning as a Complementary Path}
+Data-driven approaches to detection should also remain a viable future path, particularly for challenging scenarios such as heavy occlusion and intricate reflections. Nevertheless, such a path should be pursued as a complement to rather than a replacement for the current deterministic approach.
 
 \section{Final Conclusion}
-TODO: ADD CONTENT HERE
+The present work has shown through a concrete implementation that a system for automatic dart scoring can indeed be constructed as a viable software/hardware solution, even without relying on any special sensors. The implemented system indeed works as intended by combining live hits, a functional web interface, deterministic gameplay, and persistent analytics.
+
+From a personal perspective, perhaps the biggest contribution of this work is to show that frontend architecture indeed plays a role in overall system quality. Real-time rendering, explicit states, and correction paths are not just niceties but rather functional aspects of a system that can indeed make data-driven approaches to detection trustworthy. With this foundation now in place, further work can indeed improve aspects such as robustness and analytical depth without compromising on aspects such as simplicity, responsiveness, and accessibility.

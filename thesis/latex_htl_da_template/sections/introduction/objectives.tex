@@ -14,15 +14,27 @@ It is necessary to implement a web interface that can be accessed on the same co
 
 The developed application supports different versions of the game. Most commonly used versions include 501 and 301. In addition, the following rule variations have been implemented: Double In and Double Out. These versions cover the most popular ones, making it easier to play with the developed software.
 
+\subsubsection{Transparent Correction and Recovery Workflow}
+
+Since it is impossible for the auto hit detection mechanism to be 100\% effective under all circumstances, a correction workflow that is readily available and easy to understand for the user is a necessity. This means that a workflow for undoing actions is a required part of the objectives, not a secondary addition. This allows players to easily recover from a rare false positive without interrupting the flow of the game.
+
+\subsubsection{Persistent Player-Centric Statistics}
+
+In addition to displaying the scores, the software will also need to include a player-centric statistics system that can be understood by the average user. This means converting the raw data of throws into useful information, such as hit percentage, win percentage, distribution, etc., so that the software can be useful for gameplay as well as performance analysis of a player’s throws.
+
 \subsection{Technical Objectives}
 
 \subsubsection{Motion-Based Dart Recognition}
 
-The system must recognize when a new dart has struck the board, distinguish that event from the static scene, and determine the final hit position reliably enough for automatic scoring.
+The software will need to recognize when a dart hits the board, differentiate it from the static scene, and accurately recognize where it landed for automated scoring.
 
 \subsubsection{Manual and Marker-Based Calibration Concepts}
 
-The system requires a calibration procedure that maps image coordinates to dartboard scoring regions. Both a manual workflow and a marker-based workflow are considered so that the project can balance ease of setup against geometric accuracy.
+Since the software will need a calibration step where it maps the image coordinates onto the dartboard’s scoring areas, a manual workflow and a marker workflow will be considered. This will allow the team to weigh the trade-offs between simplicity and precision when it comes to the calibration process.
+
+\subsubsection{Deterministic Frontend State Transitions}
+
+Since the frontend will need to apply the rules of the game deterministically, meaning that it will need a set of rules for when a turn changes, when a player busts, and when a player wins, determinism is a technical objective.
 
 \subsection{Objective Traceability}
 

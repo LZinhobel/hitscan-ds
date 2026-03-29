@@ -3,28 +3,55 @@
 \section{Test Environment}
 \subsection{Lighting Conditions}
 
-\subsubsection{Shadow and Reflection Impact}
-Lighting was also recognized as a key factor to ensure proper detection. Experiments were performed to identify how shadows cast by dart shafts and the person throwing created unstable contour shapes and periodic false motion areas. The problem was addressed by adding a light ring around the dartboard. This provided a more uniform light distribution on the dartboard surface while reducing directional shadows considerably.
+\subsubsection{Challenges Identified}
+Lighting was recognized as a critical factor to ensure proper dart detection. Early experiments identified how shadows cast by dart shafts and the person throwing created unstable contour shapes and periodic false motion areas during the frame differencing stage.
 
-Under this new lighting condition, contour detection was more stable during successive throws, especially around areas close to ring boundaries where small variations in lighting would normally cause variations in tip position. Errors observed under this new lighting condition were mainly due to calibration issues.
+\subsubsection{Solution: Ring Light Implementation}
+The lighting problem was addressed by adding a ring light positioned around the dartboard. This modification provided two key improvements:
+\begin{itemize}
+	\item More uniform light distribution on the dartboard surface
+	\item Significant reduction in directional shadows from dart shafts and surroundings
+\end{itemize}
+
+\subsubsection{Impact on Detection Stability}
+Under the new lighting condition, contour detection was noticeably more stable during successive throws, especially in critical areas near ring boundaries where small variations in lighting would normally cause significant variations in tip position estimation.
+
+\subsubsection{Remaining Error Sources}
+Errors observed under the optimized lighting condition were mainly attributable to calibration issues rather than lighting-related factors, confirming that the ring light approach successfully mitigated the primary lighting challenges. This demonstrates that with proper illumination, other system constraints (primarily calibration accuracy) become the limiting factor.
 
 
 \subsection{Camera Setup}\label{subsec:eval_camera_setup}
 
-\subsubsection{Distance, Angle, and FPS}\label{subsubsec:eval_camera_distance_angle_fps}
-All evaluation runs were performed with the following camera configuration:
+\subsubsection{Primary Camera Configuration}
+All evaluation runs were performed with a standardized camera configuration to enable reproducibility and consistency across test sessions:
 
 \begin{itemize}
 	\item Webcam model: UGREEN Camera 4K
 	\item Resolution: $1920 \times 1080$ (FHD)
 	\item Effective frame rate during testing: 26 FPS
 	\item Stream mode: RGB video
-	\item Approximate field setup: camera angle $\approx 50^{\circ}$, camera distance $\approx 60\,\mathrm{cm}$
 \end{itemize}
 
-Other camera characteristics that were noted during the setup process were the image size, which was 2.07 MP and the aspect ratio, which was 1.78. Also the average brightness level, which was around 46\% and the low saturation level of 2.59\%.
+\subsubsection{Spatial Setup Parameters}
+The field setup parameters were carefully chosen to balance image coverage with pixel-level detail:
+\begin{itemize}
+	\item Camera angle: approximately $50^{\circ}$
+	\item Camera distance: approximately $60\,\mathrm{cm}$
+\end{itemize}
 
-The camera distance was not based on any specific geometric constraint but rather on the ability of the image to contain the entire dartboard while at the same time maximizing the board occupancy in the image. This was justified since increasing the camera distances reduces the pixel detail at the tip of the contour.
+\subsubsection{Image Characteristics}
+Additional camera characteristics that were noted during the setup process:
+\begin{itemize}
+	\item Image size: 2.07 MP
+	\item Aspect ratio: 1.78
+	\item Average brightness level: approximately 46\%
+	\item Saturation level: 2.59\%
+\end{itemize}
+
+\subsubsection{Distance and Coverage Rationale}
+The camera distance was not based on any specific geometric constraint but rather on practical considerations: the ability of the image to contain the entire dartboard while simultaneously maximizing the board occupancy in the frame. This choice is justified since increasing camera distance reduces the pixel detail at the dart tip contour, which directly impacts localization accuracy. The chosen $60\,\mathrm{cm}$ distance represents an optimal balance between complete board visibility and sufficient pixel-level resolution for tip detection.
+
+\vspace{\baselineskip}
 
 \begin{center}
 \captionsetup{type=table,hypcap=false}
@@ -56,28 +83,36 @@ The camera distance was not based on any specific geometric constraint but rathe
 
 
 \section{Evaluation Metrics}
+
 \subsection{Hit Position Error}
 
-\subsubsection{Millimeter Deviation}
-The system that has been implemented maps the identified tip coordinate location onto the ring sector region in order to classify the hit location, and as such, the most obvious manifestation of the error that the system might make in practice is at the region boundaries. Rather than using the millimeter error value that might be experienced in the system, the evaluation focused more on the ability of the localization system to stay within the correct region for scoring purposes in practice.
+\subsubsection{Localization Accuracy Approach}
+The system maps the identified tip coordinate location onto the ring sector region in order to classify the hit location. Rather than using millimeter-level error metrics, the evaluation focused on the ability of the localization system to correctly classify the sector region, which is the metric that directly impacts gameplay accuracy.
 
-Qualitatively, the robustness of the system was observed in the impacts made at the center and the mid sector regions. The most prominent localization uncertainty was observed in the near-boundary throws, where the minor contour shift can cause the tip location to switch from one sector region to another. This behavior can be attributed to the single-camera projection system, where minor distortions and contour variations have the most significant impact near the decision boundaries.
+\subsubsection{Central and Mid-Sector Performance}
+Qualitatively, the robustness of the system was observed in the impacts made at the center and the mid-sector regions, where the contour is most stable and clearly separated from boundaries.
 
+\subsubsection{Boundary-Region Uncertainty}
+The most prominent localization uncertainty was observed in near-boundary throws, where minor contour shifts can cause the tip location to switch from one sector region to another. This behavior can be attributed to the single-camera projection system, where minor distortions and contour variations have the most significant impact near the decision boundaries. The single-view perspective inherently introduces ambiguity at region edges.
+
+\vspace{\baselineskip}
 
 \subsection{Sector Classification Accuracy}
 
-\subsubsection{False Positive Rate}
-Across extensive practical throwing sessions (including central hits, boundary-near hits, and out-of-board throws), sector-level classification remained stable enough for recreational play. The quantified accuracy values are reported in Section~\ref{sec:accuracy_consolidation}, where setup-specific outcomes and computed accuracy values are listed in a structured format.
+\subsubsection{Overall Classification Performance}
+Across extensive practical throwing sessions (including central hits, boundary-near hits, and out-of-board throws), sector-level classification remained stable enough for recreational play. The quantified accuracy values are reported in Section~\ref{sec:accuracy_consolidation}, where setup-specific outcomes and detailed accuracy calculations are provided.
 
-Most misclassifications belonged to one of three categories:
+\subsubsection{Misclassification Categories}
+Analysis of misclassifications identified three primary failure modes:
 
 \begin{itemize}
-	\item Calibration drift or poor calibration quality, causing systematic sector offset.
-	\item Boundary ambiguity when a large contour intersects a sector edge, producing unstable assignment between adjacent sectors.
-	\item Vibration-related global motion when the camera mount couples mechanically to the board.
+	\item \textbf{Calibration Issues}: Calibration drift or poor calibration quality, causing systematic sector offset across all throws.
+	\item \textbf{Boundary Ambiguity}: Boundary ambiguity when a large contour intersects a sector edge, producing unstable assignment between adjacent sectors.
+	\item \textbf{Mechanical Vibration}: Vibration-related global motion when the camera mount couples mechanically to the dartboard.
 \end{itemize}
 
-The first two categories provided results that, although incorrect, were reasonable within a neighboring area rather than arbitrary data, which further reinforces the proximity of the localization to the actual impact location.
+\subsubsection{Error Proximity Analysis}
+The first two categories provided results that, although incorrect, were reasonable within a neighboring area rather than arbitrary data, which further reinforces the proximity of the localization to the actual impact location. This indicates that the underlying detection and localization pipeline is fundamentally sound, with errors occurring near decision boundaries rather than systematic offsets across the board.
 
 \begin{center}
 \captionsetup{type=table,hypcap=false}
@@ -207,7 +242,78 @@ For each setup, accuracy is calculated as:
 		\bottomrule
 	\end{tabularx}
 \end{center}
+\setauthor{\firstauthor}
+\section{Frontend, State, and Analytics Evaluation}
+\subsection{Real-Time Interface Responsiveness}
+\subsubsection{Measurement Procedure}
+In addition to the accuracy of the vision system, real-world usability is affected by the time it takes for the interface to update the score once a hit is detected. To assess the real-time responsiveness of the system, multiple cycles of game play sequences were performed, and the time from event emission in the backend to state transition in the frontend and finally to the score update in the interface was monitored. The evaluation did not aim to precisely measure time delays, as this is not critical to game play. Instead, the evaluation aimed to assess the consistency of the interface in updating the score in real time.
 
+\subsubsection{Observed Behavior}
+During the evaluation, the score update in the interface was observed to be immediate for regular play. For game play involving rapid sequential throws, the interface behaved correctly, updating player status, score, and number of throws in the expected order. This is a real-world confirmation of the websocket and store combination providing real-time score feedback as required for a game play interface.
+
+\subsubsection{Degraded Conditions}
+To further assess the interface and game play, the backend server was restarted, and the websocket connection to the frontend interface was terminated. The interface correctly disconnected from the game play state and reconnected once the websocket connection was re-established. This is relevant to game play, as it confirms the interface and game play state correctly revert to a disconnected state in response to a lost websocket connection, without affecting the score. This is important, as it shows the game play state is not corrupted when the interface re-establishes the websocket connection and sends a request for the latest game state, which is not available at the time of reconnection.
+
+\subsection{Game State, State Transitions, and Analytics Evaluation}
+\subsubsection{Turn and Bust Validation}
+To assess the state transition and game logic, specific game play sequences involving busts, checkouts, and turn rollover from three throws to a new turn were performed.
+
+\subsubsection{Undo Workflow Verification}
+Undo functionality was verified with normal and boundary condition scenarios, for example, undo immediately after bust and undo after route change. In all cases, the implementation correctly removed the latest throw, recalculated the values, and refreshed the views. This verifies the reliability of the replay-based recalculation for the chosen domain size.
+
+\subsubsection{Cross-View State Continuity}
+Switching routes between setup, game, and statistics views was performed several times for active and finished sessions. The state was always consistent without requiring a full page reload. This verifies the store implementation and confirms one of the primary frontend verification goals: ensuring game continuity for navigating to analytics and configuration views.
+
+\begin{center}
+\captionsetup{type=table,hypcap=false}
+	\centering
+	\caption{Verification scenarios for the backend implementation with the observed results.}
+	\label{tab:backend_verification_scenarios}
+	\begin{tabularx}{\linewidth}{@{}X X X@{}}
+		\toprule
+		\textbf{Scenario} & \textbf{Expected Behavior} & \textbf{Observed Result} \\
+		\midrule
+		Three valid throws in one turn & Automatic turn handover after third throw & Confirmed in multiple sessions \\
+		Bust condition triggered & Score reverts to turn-start value & Confirmed for various sequences \\
+		Undo after valid hit & Last throw removed and UI recalculated & Confirmed with consistent state replay \\
+		Temporary websocket disconnect & Controlled waiting state and safe resume & Confirmed with short-term disconnections \\
+		Switch to statistics and return to game & No loss of active session context & Confirmed for route transitions \\
+		\bottomrule
+	\end{tabularx}
+\end{center}
+
+\subsection{Multi-Client Synchronization Behavior}
+
+\subsubsection{Local Network Viewing}
+The architecture also allows multiple clients on a local network to share in the observation of the state changes in a game. During testing with two simultaneous browser clients, it was observed that both views correctly reflected incoming hit events in nearly identical order with no apparent desynchronization in turn ownership or score values.
+
+\subsubsection{Consistency Safeguards}
+The consistency was ensured through handling websocket events as ordered state transition inputs and ensuring unsynchronized local state changes were not made. The update discipline on the store and action boundaries was found to be effective in this case scenario. Thus, the user interface was found to behave correctly even in cases where one client lost focus or was subject to minor rendering delays.
+
+\subsection{Statistics and Persistence Validation}
+
+\subsubsection{Metric Correctness Checks}
+The statistics view was found to behave correctly through comparisons with manually computed values using selected persisted score sequences. The metrics were found to be accurate in cases where darts thrown, total score, hit percentage, and win percentage were computed using non-zero values in the selected score sequences.
+
+\subsubsection{Handling Sparse and Empty Data}
+New player instances with sparse data were used to test the analytics view's handling of sparse data. The UI was found to behave correctly in this case scenario, presenting stable values instead of undefined or not a number values in cases where data was sparse or missing. This shows that the code correctly implements guard clauses against presentation-level failure in cases where data is missing or sparse.
+
+\subsubsection{Interpretability of Statistical Views}
+From an operational viewpoint, the chosen metric set has been found to be adequate for rapid interpretation following a game session by non-technical players. Players can easily identify immediate trends, such as having a low hit percentage despite high throw volume, without the need for external tooling. This validates the thesis’s objective of providing accessible and meaningful feedback in conjunction with automated scoring.
+
+\begin{lstlisting}[numbers=left,caption=Practical validation protocol for frontend and statistics behavior, label=lst:frontend_stats_validation_protocol]
+Start game with known ruleset and two predefined players.
+Determineistic throw sequence with expected score computation.
+Bust and undo paths are triggered deliberately.
+Score state is compared to manual step-by-step computation.
+Statistics view is opened and compared to manual computation.
+Repeat for player with empty history to check for proper placeholder display.
+\end{lstlisting}
+
+\subsection{Summary of Frontend Evaluation Findings}
+The frontend has been found to be adequate for its practical purposes in the tested environment. Updates are responsive in real-time, state computation is deterministic in most common correction scenarios, and analytics computation matches expected values for representative datasets. However, to be fully robust in hostile network environments, further hardening is necessary. For the purposes of the thesis, the current state is adequate for the proposed home and laboratory environment.
+
+\setauthor{\secondauthor}
 \section{Edge Case Analysis}
 
 \subsection{Bounce-Outs}

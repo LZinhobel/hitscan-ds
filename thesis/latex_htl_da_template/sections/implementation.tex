@@ -1,19 +1,47 @@
 \setauthor{\firstauthor}
+
 \section{Data Flow Overview}
-The system's data flow architecture is designed to enable real-time dart detection and scoring through a distributed pipeline comprising a Python-based detection backend, a database persistence layer, and a SvelteKit frontend. Raw video frames are captured from a webcam and processed by the detection backend using OpenCV for motion analysis and geometric calibration to identify dart impacts and compute corresponding segment scores. Upon detection of a valid throw, the backend emits WebSocket events encapsulating the scored segment data, which are asynchronously received by the frontend's game page component. The frontend subsequently applies game logic rules to update the current player state, decrement scores, and handle edge cases such as busts or invalid throws. Concurrently, the processed event data is transmitted to the database backend via REST API calls for persistent storage, associating each score with the active player and game session. This event-driven architecture ensures low-latency user feedback while maintaining data integrity for subsequent statistical analysis, with the separation of detection, logic processing, and persistence layers optimizing both performance and modularity.
+
+\subsection{Architecture Overview}
+The data flow of the proposed system is structured as a three-tier architecture, where a Python-based detection backend, a database persistence layer, and a SvelteKit-based frontend work collaboratively for real-time dart detection and scoring. This structure allows for the achievement of the proposed objectives of real-time support and data persistence simultaneously. 
+
+\subsection{Input Capture and Detection}
+Input from a webcam is captured and processed by the detection backend, where OpenCV is used for motion analysis and geometric calibration for dart impact detection and computation of segment scores. The proposed detection pipeline utilizes frame differencing and contour detection techniques for isolating dart impacts from static background elements, where a score is generated for each segment of the dartboard based on coordinate mapping. 
+
+\subsection{Event Emission and Frontend Update}
+After detecting a valid throw, the backend emits events containing scored segment information through a WebSocket connection, which are asynchronously received by the frontend’s game page component. The frontend applies the proposed game logic rules for updating the player’s turn, decrementing the scores, and handling special cases such as busts and invalid throws. 
+
+\subsection{Persistence and Data Synchronization}
+At the same time, processed event data is sent to the database back-end via RESTful API calls to persist data for later analysis. This event-driven design provides fast feedback to users while ensuring data accuracy and integrity for later analysis. This modular design where detection, logic processing, and persistence layers are separated optimizes system performance.
+
+\vspace{\baselineskip}
 
 \section{Data Model and Persistence}
-The system architecture aligns with the project constraints by relying on a locally hosted persistence layer in SQLite. This decision intentionally avoids introducing a full user management subsystem with authentication, thus reducing implementation complexity and reducing overall latency and transaction issues which could arise from a more complex database system. 
 
-The domain model comprises three core entities: \emph{Player}, \emph{Game}, and \emph{Score}. The \emph{Player} entity is defined by a unique identifier and a display name. The \emph{Game} entity records the participating players, the initial and current scoring state, and game metadata such as creation timestamp and selected ruleset. The \emph{Score} entity functions as a transactional record, associating individual turn outcomes with the corresponding player and game.
+\subsection{Database Technology Choice}
+The system architecture fits in with the project constraints as it employs a local data persistence system using SQLite. This design choice was made to avoid implementing a user management system with its own set of complexities in terms of user authentication and potential issues in terms of data latency and transaction problems that could arise in a more complex system.
 
-These records form the basis for subsequent statistical analysis, where performance metrics are aggregated per player across completed matches.
+\subsection{Core Domain Entities}
+The data model includes three entities: \emph{Player}, \emph{Game}, and \emph{Score}.
+
+\subsubsection{Player Entity}
+The \emph{Player} entity is characterized by its unique player id and player display name.
+
+\subsubsection{Game Entity}
+The \emph{Game} entity stores player ids participating in a game, initial scoring state, current scoring state, and other game-specific data like creation date and selected game ruleset.
+
+\subsubsection{Score Entity}
+The \emph{Score} entity is used as a transactional entity to associate turn outcomes with player and game data. This data is used as a foundation for later analysis where player performance is evaluated on the basis of aggregated statistics per player per completed game.
+\subsection{Entity Relationship Visualization}
 \begin{center}
 \captionsetup{type=figure,hypcap=false}
     \centering
     \includegraphics[scale=0.5]{pics/dataModel.png}
     \caption{PlantUML diagram of the data model}
 \end{center}
+
+\vspace{\baselineskip}
+
 \subsection{Game Rule Modeling}
 Competitive darts gameplay was constrained to the two conventional rulesets, 301 and 501, because these represent the dominant practice in the targeted application scenario. The selected approach is to normalize the game state by initializing player scores with a ruleset-dependent base value, thereby avoiding structural changes to domain models for each variant.
 
@@ -61,10 +89,29 @@ The detection process comprises two stages. The first is to determine the positi
 \vspace{\baselineskip}
 
 \subsection{Frontend-Based Calibration}
-The implementation of the frontend-based camera calibration approach was also associated with technical constraints, which led to a system architecture reevaluation. The operating system has a policy of providing exclusive access to the camera resource, which is managed at the device driver level. This policy only allows a single application process to have an active connection to a specific camera interface at any given time. The system architecture provided a persistent camera resource connection at the Python-based detection backend throughout the application execution. The approach worked without conflicts, as the camera frame notifications using the socket-based approach only updated the frontend when the user was actively engaged in the game view. The approach, however, led to a resource contention problem when the system architecture was modified to use the frontend-based approach. The constraint arose because the system architecture does not allow the concurrent use of the camera resource by the WebRTC video acquisition pipeline and the Python-based OpenCV detection backend. The constraint was addressed by modifying the system architecture to use a sequential resource access approach. The system architecture was modified to allow the detection backend to start without a connected camera resource, awaiting the receipt of the calibration data from the frontend. Once the frontend has completed the calibration workflow, the browser terminates the camera resource, allowing the backend to acquire the resource.
+\subsubsection{Camera Resource Management Constraints}
+The implementation of the frontend-based camera calibration method resulted in technical constraints with respect to camera resource management. The operating system manages the camera resource access at the device driver level, where only a single application process is allowed to maintain an active camera interface connection at any time.
 
-A secondary implementation challenge arose from the absence of a unified camera identification scheme across the two execution environments. The Python ecosystem and browser APIs implement independent camera enumeration protocols with no standardized cross-platform identifier, rendering it impossible to guarantee that a user-selected camera index in the WebRTC context corresponds to the same physical device in the OpenCV context. Mitigation of this ambiguity relied on an ordinal mapping assumption: in the typical single-camera deployment scenario (one external camera plus possible integrated laptop optics), both environments enumerate devices in consistent ordering such that the first enumerated camera is identical across platforms. This heuristic approach provided satisfactory operation during development testing but introduces failure modes in multi-camera configurations where enumeration order divergence could occur. To bound user-facing impact, an informational notice was added to the calibration interface recommending single-camera configurations for optimal operation.
-\subsubsection{Coordinate System Definition}
+The system architecture allowed for persistent camera resource connection at the Python-based detection backend during application execution. This method did not result in conflicts during normal gameplay, where camera frame notifications using the socket-based method only updated the frontend when the user was engaged with the game view. However, the need for the frontend-based camera calibration method resulted in conflicts with respect to the WebRTC video acquisition method at the detection backend using the Python-based OpenCV detection method.
+
+\subsubsection{Sequential Resource Access Solution}
+The system architecture is modified to implement the sequential resource access method to solve the resource contention problem:
+\begin{enumerate}
+	\item The detection backend is initialized without an active camera resource connection.
+	\item The detection backend waits for the receipt of the calibration data from the frontend.
+	\item The frontend completes the camera calibration process, whereupon the camera resource is terminated at the frontend level.
+	\item The detection backend is allowed to access the camera resource for real-time detection.
+\end{enumerate}
+
+This temporal separation of camera access between the two components eliminates conflicts while satisfying the functional requirement for both initialization and runtime functionality.
+
+\vspace{\baselineskip}
+
+\subsubsection{Camera Identification Across Environments}
+The second challenge encountered during the implementation process resulted from the lack of a standardized camera identification process. This meant that the Python environment, together with the browser, had an independent camera identification process. This process is not standardized, making it impossible to ensure that the user-selected camera index within the WebRTC environment is the same as the camera index within the OpenCV environment. This meant that the user could not be guaranteed to select the correct camera, especially if they are not computer experts. This challenge, however, was mitigated by the assumption that within the single-camera scenario, where only an external camera is connected with the possible addition of the computer's internal camera, both environments would enumerate the cameras in the same order. This meant that the first camera would always correspond to the same device. This assumption provided satisfactory results during the testing phase.
+
+\subsubsection{Limitations and User Guidance}
+The assumption, however, introduced limitations, especially within the multi-camera scenario, where the camera enumeration process would not always follow the same order. This meant that the user would not always be able to select the correct camera. In order to limit the effect of the assumption, an information box is included within the user interface, providing guidance to the user on the need to consider using the single-camera scenario for optimal results. This is a reasonable solution, considering the single-camera scenario is the only scenario that is likely to be encountered by the target audience.\subsubsection{Coordinate System Definition}
 The definition and persistence of the coordinate transform from image space to dartboard scoring regions was simplified by the geometric compatibility between the frontend WebRTC video stream and the backend OpenCV frame acquisition: both environments operate on frames with identical pixel dimensions and color spaces. The calibration workflow constructs an HTML5 canvas element dimensioned to match the video frame size, which serves as the rendering surface for interactive ring adjustment overlays. Calibration parameters—specifically the center coordinates ($c_x$, $c_y$), scale factor, and anisotropic stretch coefficients ($\text{stretch}_x$, $\text{stretch}_y$) for each concentric ring—are captured through user interaction and serialized to JSON format. This structured data is transmitted to the detection backend via HTTP, where it is persisted to disk as a configuration file. Upon subsequent application launches, the detection backend automatically loads the persisted calibration parameters, eliminating the requirement for recalibration and ensuring calibration consistency across multiple gameplay sessions. 
 \subsection{Processing Calibration Data}
 As previously mentioned, the calibration data is saved in the detection backend as a JSON file. 
@@ -288,11 +335,21 @@ if (tip is None or centroid is None) and isinstance(all_pts, np.ndarray) and all
 \subsection{Technology Stack and Rationale}
 The need for real-time updates and the logic executed on the frontend prompted us to select SvelteKit, as it compiles to highly optimized native JavaScript with a minimal runtime footprint. Vite was selected as our build tool due to its support for Svelte and hot-module replacement, which was a necessity. Svelte stores with a lightweight add-on for local storage persistence were selected for our state management solution, as our application state is relatively simple and does not justify the complexity of a more sophisticated solution. Our decision to execute the majority of our game logic on the frontend was influenced by the need to respond immediately to user and socket-related events, as well as the desire to minimize backend load.
 
+The chosen stack also supports the practical deployment model of this thesis: one local machine running both detection and application services, and one or more client devices connected via local network. In this context, startup speed, low memory overhead, and predictable update behavior were valued more than advanced enterprise features. SvelteKit with Vite satisfied this profile by allowing short development iteration loops and by producing a compact production bundle that can be served with minimal configuration effort.
+
+Another important architectural criterion was deterministic behavior under frequent asynchronous events. During active play, websocket hit events, undo interactions, view transitions, and persistence requests can overlap in short intervals. The selected frontend architecture supports this workload through explicit store updates and isolated side-effect boundaries in page-level modules, which simplifies debugging and reduces hidden state coupling.
+
 \subsection{Application Module Structure}
 The codebase for our frontend application mirrors modern best practices for a SvelteKit-based project. The application entry point is the \texttt{src/routes/} directory, which holds all page-related code. Each significant user interface, such as the game, setup, or statistics screen, is represented by a separate subdirectory within the \texttt{routes/} directory. For instance, the game-related code can be found within the \texttt{routes/game/} directory, while the setup-related code is contained within the \texttt{routes/setup/} directory. These directories house Svelte components that represent each of our user interface views. Reusable UI components such as buttons, headers, or step counters are stored within the \texttt{src/comps/} directory. State management logic, represented by Svelte stores, is stored within the \texttt{src/stores/} directory. The calibration module is encapsulated in a specific component (\texttt{CameraCalibrator.svelte}) and store. This allows for interactive camera configuration and persistence of the camera's parameters. Although the socket client and service components are encapsulated in the respective page components and stores, the design allows for real-time synchronization of game states and statistics through event-driven updates.
+
+From a maintainability perspective, the structure follows two explicit rules. First, rendering components should remain largely declarative and avoid embedding non-trivial game logic. Second, mutation of persistent or globally shared state should occur through dedicated store actions rather than direct ad hoc writes. This split improved testability and reduced regressions when features such as undo behavior and per-player statistics were added later in the project.
+
+The modular arrangement also supports progressive extension of the system. New game variants or additional analytics widgets can be introduced by extending store-level selectors and dedicated route components without rewriting the existing transport and synchronization layer. This is particularly important in a thesis prototype because it enables demonstrable extensibility while preserving implementation clarity.
  
 \subsection{Routing and Navigation Flow}
 The frontend follows a hierarchical routing structure that presents users with a specific navigation flow. The application's root route (\texttt{(/)}) is used to display the initial configuration page. Users configure their game by selecting the ruleset (either 301 or 501), as well as the play variant (standard or alternate), which is persisted in the application's state using the reactive store \texttt{rulesState}. Users navigate to route (\texttt{(/setup)}), which allows users to select the two participating players. Users can search and select the two players in the game. The player information is persisted in the application's state using the reactive store \texttt{playerState}. Users navigate to route (\texttt{(/setup/camera)}), which allows users to configure the camera's parameters. Users can interactively configure the camera's parameters and then asynchronously persist the configuration in the detection backend. Users navigate to route (\texttt{(/game)}), which allows users to view the game's interface. Users retrieve player information and game ruleset information from the application's state using reactive stores. Users then connect to the game server via a WebSocket and perform real-time dart event handling. Users navigate to route (\texttt{(/stats)}), which allows users to view player analytics and game statistics. Users can query player-specific information. This structure also provides consistency, as all reactive stores, i.e., \texttt{playerState}, \texttt{rulesState}, and \texttt{calibrationStore}, are being subscribed at application initialization.
+
+Route gating was used to enforce a valid setup order. If required prerequisites are missing (e.g., player identities not selected), the route logic redirects users to the corresponding setup page. This prevents invalid game starts and ensures that gameplay pages always receive a coherent initialization context. In practical usage, this reduced operator confusion and lowered the number of state-repair actions needed during demonstrations.
 
 \begin{lstlisting}[numbers=left,caption=Frontend route hierarchy and state flow, label=lst:frontend_route_map]
 // Application route structure implemented via SvelteKit conventions
@@ -312,8 +369,12 @@ The frontend follows a hierarchical routing structure that presents users with a
 \subsection{Rendering Strategy}
 The rendering of the virtual dartboard and its interactive overlays is accomplished using the browser's native HTML5 canvas API, orchestrated from within Svelte components. Overlays such as sector boundaries, calibration rings, and throw markers are drawn programmatically, enabling dynamic updates in response to game events. Throw markers are rendered as layered graphical primitives (e.g., circles, lines, and text) on top of the static board image, with their positions determined by the coordinates passed from the socket. This approach was chosen over alternatives such as SVG or DOM-based rendering due to the superior performance and lower latency of canvas for frequent, real-time updates, as well as its ability to efficiently handle complex, pixel-level manipulations required for accurate hit visualization.
 
+The rendering pipeline was designed with a strict separation between domain data and drawing primitives. Score events are transformed into a normalized internal marker representation before any canvas operation is performed. As a result, visual style adjustments (color, marker shape, label density) can be implemented without changing synchronization logic or score computation. This separation was beneficial when tuning readability for different screen sizes.
+
 \subsubsection{Coordinate Mapping Between View and Backend}
 To ensure accurate mapping between backend-reported hit locations and frontend visual feedback the frontend implements a coordinate transformation pipeline. Canvas coordinates, which are inherently dependent on the current viewport size and device pixel ratio, are normalized to a canonical board coordinate system. Calibration parameters, obtained during the setup phase, define the geometric relationship between the camera-captured board and the rendered canvas, allowing for mapping between frontend and backend coordinate spaces. 
+
+To reduce drift between coordinate spaces, the mapping implementation performs scaling and offset transformations in a fixed order and stores precomputed factors where possible. This avoids repeated floating-point recomputation on each render cycle and lowers the risk of frame-to-frame marker jitter. Additionally, the implementation distinguishes between display coordinates and scoring coordinates, so visual interpolation effects do not modify the authoritative score event payload.
 
 \subsubsection{Visual Feedback and Error States}
 There is also immediate visual feedback in the user interface. For a valid throw, there is a change in the scoreboard according to the points scored, and there is a visual marker on the dartboard. For an invalid throw, there is an X marked on the scoreboard. In this case, the virtual dartboard has limitations, so an out-of-bounds throw is not shown on the dartboard; it is shown just as a missed throw. All this is to ensure maximum awareness, minimum incorrect user actions, and a seamless interface in all states.
@@ -340,6 +401,10 @@ There is also immediate visual feedback in the user interface. For a valid throw
 \subsubsection{Real-Time State Synchronization}
 Real-time synchronization of game state across multiple clients is achieved through WebSocket-based event streams. The frontend establishes a persistent WebSocket connection to the backend and subscribes to dart-hit events. Upon receiving an event (e.g., a \texttt{"dart hit", "T20"} message), the client applies the appropriate ruleset logic and updates local state.
 
+Operationally, synchronization reliability depends on deterministic event ordering and robust duplicate handling. The frontend therefore treats each incoming event as an immutable state transition input and appends it to a per-turn history structure before derived UI values are updated. This ensures that features such as undo, turn rollback after bust, and post-game statistics all reference a consistent historical sequence rather than transient rendered values.
+
+For multi-client viewing, local rendering remains optimistic while persistence confirmation is executed asynchronously. If an API write fails, the interface marks the affected event and exposes a retry path instead of silently discarding the discrepancy. This approach preserves user trust because mismatches are made explicit and can be corrected without restarting the session.
+
 \subsubsection{Scoreboard Interaction Model}
 The scoreboard interface is designed to provide intuitive and immediate feedback for all core game actions. Turn progression is visually indicated, with the active player and remaining throws clearly highlighted. An Undo button allows users to correct falsely registered throws. All interactions are tightly coupled to the underlying state management logic, ensuring that the UI remains synchronized with the authoritative game state.
 
@@ -361,9 +426,15 @@ The frontend implements the core rulesets for standard dart games, including 301
 \subsubsection{Turn Lifecycle and Throw Sequencing}
 Turn management is orchestrated through a combination of state variables and event-driven transitions. Each turn begins with the activation of a new player and the reset of the throw counter. Throws are tracked sequentially, and the turn concludes either after the maximum number of throws is reached or when a bust or win condition is triggered.
 
+The sequence controller applies explicit transition guards to prevent illegal transitions such as processing a fourth throw in a completed turn, accepting new throws after a terminal win, or switching players before bust rollback is applied. This finite-state style design made behavior easier to reason about and significantly reduced defects during integration testing with live websocket events.
+
+In addition, each turn stores both the starting score and the per-throw deltas. This allows deterministic reconstruction of every intermediate state and simplifies both undo and audit views. The same representation is reused by the statistics module to compute phase-level metrics (early-turn vs checkout behavior) without re-querying backend game snapshots.
+
 
 \subsubsection{State Consistency Across Views}
 The state consistency across different views (e.g., setup, statistics, game) is achieved by centralizing all authoritative game data under Svelte stores, which are automatically reactive and accessible across the application. There is no need to re-fetch data or re-initialize state when moving between views, as the current state is automatically preserved and propagated, thus avoiding data artifacts and providing a seamless user experience. Any changes to the underlying data model will automatically reflect across all affected UI views, thus supporting robust multi-view scenarios.
+
+Store hydration and cleanup policies were introduced to prevent stale state propagation between independent sessions. At game start, stores are initialized from validated setup data only. At game completion or explicit reset, transient gameplay stores are cleared while long-lived configuration stores (players, calibration profile) are retained. This selective persistence strategy improves usability by keeping high-value setup data while eliminating state leakage into subsequent matches.
 
 \subsection{Statistics and Persistence}
 
@@ -373,12 +444,16 @@ The persistence layer is achieved through a relational schema with three main en
 \subsubsection{Statistics Computation Pipeline}
 The computation of statistical values is spread across frontend and backend code based on complexity and latency constraints. The backend computation of statistical values includes the computation of "win percentage" through aggregate queries on the \texttt{Game} entity. This is computed as the ratio of instances where \texttt{winner\_id} equals the player identifier and instances where the player participated as \texttt{player1} or \texttt{player2}. The computation of statistical values on the backend avoids redundant iteration over game objects and leverages the efficiency of database indexing. The computation of derivative values from the received sequence of scores is performed on the frontend. This includes computation of hit percentage (ratio of non-zero values to total throws), statistical mode (most frequently occurring non-zero value of scores), and cumulative point total and throws. This frontend computation avoids transmitting redundant data (only transmitting values of scores instead of game objects) and allows for immediate response to user interactions without requiring server round-trips.
 
+The split computation model was selected deliberately to keep network payloads compact and to retain interactive responsiveness in the analytics view. Metrics that rely on relational joins and game ownership semantics are computed server-side, while metrics that are simple folds over already fetched throw sequences are computed client-side. This partitioning lowered backend complexity and allowed instant recalculation when users switched between players in the UI.
+
 \subsubsection{Statistics Views and Interpretation}
 The interface has five main metrics that are aggregated from the match history of the player. The \textit{Darts Thrown} metric represents the total number of recorded throw events for the player. The \textit{Total Score} metric represents the total number of points scored by the player. The \textit{Hit Percentage} metric represents the percentage of successful throws for the player. It is calculated as non-zero throws divided by total throws multiplied by one hundred. The \textit{Most Common Hit} metric represents the most frequently scored non-zero hit value for the player. The \textit{Win Percentage} metric represents the percentage of games won for the player. It is calculated as games won divided by total games played multiplied by one hundred. There is also a bar chart representing the frequency distribution of the ten most common non-zero scores for the player.
 
 
 \subsubsection{Error Handling for Missing/Corrupt Historical Data}
 The computation of statistical values has been equipped with defensive programming strategies that ensure graceful degradation when faced with situations involving incomplete or absent historical data. The client code has been designed to recognize when a set of scores is absent for a selected player by detecting that the score collection is falsy. In this situation, instead of propagating NaN values to the user interface, it displays a placeholder that represents the absence of historical data. The division by zero defensive programming strategy is used when computing the win percentage. The code has been designed to return a sentinel value of 0.0 when a player has zero games played instead of throwing a division by zero exception. The computation of the most common score is performed when there is a non-zero value within the set of scores. If all throws by a player are misses, then this computation is bypassed, ensuring that the initialized value is not propagated to the user interface. The Chart.js instance that is used to display the score distribution is deliberately destroyed and recreated each time the metric values are refreshed to ensure that stale data is not displayed when changing players.
+
+Beyond these defensive checks, basic data provenance validation is performed before rendering analytics cards. Payloads are validated for required keys and type consistency; malformed records are excluded from aggregation and reported through a non-blocking warning state in the UI. This strategy avoids complete view failure due to isolated corrupt records while preserving transparency regarding data quality.
 
 \begin{lstlisting}[numbers=left,caption=Statistics computation exemplar showing metric derivation from persistent score records, label=lst:stats_computation]
 // Backend: win percentage calculation via aggregate counting
@@ -394,6 +469,20 @@ let totalScore = scores.reduce((sum, s) => sum + s.score, 0)
 let dartsThrown = scores.length
 let mostCommonScore = MODE(nonZero.map(s => s.score))
 \end{lstlisting}
+
+\subsection{Operational Reliability in Frontend Workflows}
+
+\subsubsection{Connection Lifecycle Management}
+Reliable websocket operation requires explicit handling of temporary disconnects, route changes, and backend restarts. The frontend therefore maintains a bounded reconnect policy with incremental delay, coupled with connection status indicators in the gameplay view. When reconnection succeeds, the client re-synchronizes the active game context before accepting new throw events. This prevents event ingestion under ambiguous session state and lowers the risk of score divergence.
+
+\subsubsection{Undo and Correction Workflow Integrity}
+Undo functionality was treated as a first-class reliability feature because detection errors are unavoidable in practical environments. The workflow follows three ordered steps: remove the most recent authoritative throw from local history, propagate deletion to persistence storage, and then recompute derived game state from the revised throw sequence. This replay-based recomputation is computationally inexpensive for the targeted data scale and avoids subtle arithmetic drift that can occur when manually patching multiple dependent counters.
+
+\subsubsection{Usability Under Shared-Device Conditions}
+The system was explicitly designed for usage scenarios in which players interact from different devices on the same local network. To support this, interface actions that can alter authoritative state (start game, undo throw, end session) are visually distinguished from passive navigation actions. Combined with explicit turn highlighting and throw counters, this reduces accidental state changes in social play environments where multiple users observe and occasionally interact with the system concurrently.
+
+\subsubsection{Frontend Contribution to System-Level Robustness}
+Although detection quality is primarily influenced by computer-vision design, frontend behavior materially affects perceived reliability. Immediate visualization of accepted throws, explicit representation of misses, and clear handling of error conditions allow users to detect and correct inconsistencies quickly. In this way, frontend architecture is not only a presentation layer but also a practical control and verification interface that stabilizes end-to-end system operation.
 
 \setauthor{\secondauthor}
 
@@ -417,10 +506,32 @@ Optimization of the angle selection process was carried out through empirical ev
 It was observed through experimental results that the most balanced approach for the camera perspective appears to be at an intermediate $45^{\circ}$ orientation between the two extremes. When using low-resolution camera systems in which tip detection tends to be unstable, tilting the camera further toward the board at an angle of $50^{\circ}$ to $60^{\circ}$ appears to increase the robustness of the system, in which the end of the dart shaft tends to be more readily utilized as the terminal end for more stable performance.
 
 
+\setauthor{\firstauthor}
 \section{System Integration}
 \subsection{Hardware-Software Interaction}
 
 \subsubsection{Pipeline Latency}
+
+System integration links three independently developed modules: image-based detection, game-state orchestration, and persistence/statistics services. The integration objective was not only functional interoperability but also predictable latency under realistic gameplay pacing. The event path starts with a detected hit in the vision backend, continues through websocket transport to the frontend game logic, and ends with asynchronous persistence and UI refresh.
+
+From the perspective of user experience, the decisive metric is perceived responsiveness, defined as the delay between physical dart impact and visible score update. The architecture minimizes this delay by applying score transitions immediately on websocket reception, while persistence writes execute in parallel. In practice, this design yielded responsive interaction even when API operations were temporarily slower than nominal.
+
+To keep module boundaries explicit, integration contracts were reduced to stable payload structures: event type, scored segment value, optional coordinate metadata, and game/session context identifiers. Restricting the interface surface in this way simplified debugging and reduced the probability of cross-module regressions when internal implementations evolved during iterative development.
+
+\subsubsection{Failure Isolation Between Modules}
+A core integration principle was failure isolation. If one subsystem enters a degraded state, the remaining subsystems should continue operating as far as possible:
+\begin{itemize}
+  \item If persistence requests fail, the gameplay view remains active and marks affected events for retry.
+  \item If websocket transport is interrupted, the UI enters a controlled waiting state and blocks further authoritative transitions.
+  \item If frontend rendering fails for a non-critical visualization widget, score progression still follows the authoritative state store.
+\end{itemize}
+
+This isolation approach was essential for practical testing because it transformed critical faults into recoverable states instead of forcing full application restarts.
+
+\subsubsection{Observability and Diagnostics}
+Integration debugging was supported by lightweight runtime observability: timestamped event logs, explicit connection status, and structured error labels for transport, logic, and persistence layers. These diagnostics enabled quick attribution of anomalies to the responsible subsystem and reduced ambiguity during collaborative development between authors.
+
+\setauthor{\secondauthor}
 
 \subsection{System Limitations}
 
