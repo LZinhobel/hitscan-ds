@@ -217,7 +217,9 @@ Alternative communication strategies were also explored using other communicatio
 	\item \textbf{Server-Sent Events (SSE)}: This was not selected due to its limitations in allowing client-server communication without an extra transport layer.
 	\item \textbf{WebRTC Data Channels}: This was not selected due to unnecessary added complexity without any significant advantage in this application scenario.
 
-The chosen websocket method further aligns with the system’s interaction model, where both event reception (dart hits) and control actions (undo, session transition) need to be represented. This single persistent channel made reasoning and coding easier than with other approaches using two channels.
+\end{itemize}
+
+The chosen websocket method further aligns with the system's interaction model, where both event reception (dart hits) and control actions (undo, session transition) need to be represented. This single persistent channel made reasoning and coding easier than with other approaches using two channels.
 
 \vspace{\baselineskip}
 
@@ -255,6 +257,8 @@ During the initial stages, other rendering technologies were considered for the 
 \begin{itemize}
 	\item \textbf{SVG-based rendering} (e.g., D3.js): This is useful for applications involving vector-based diagrams. However, for applications involving continuous animation, performance is compromised.
 	\item \textbf{WebGL-based rendering} (e.g., PixiJS): This is optimized for high-throughput rendering. However, it comes at the cost of higher complexity, which is not required for game application rendering.
+
+\end{itemize}
 
 For this project, the combination of HTML5 Canvas and Chart.js provides a good compromise in terms of performance, development effort, and maintainability without compromising on interactivity required in a game scenario.
 
