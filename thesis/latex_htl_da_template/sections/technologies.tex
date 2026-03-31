@@ -40,11 +40,8 @@ The interpreter imposes a certain overhead on the execution of the Python byteco
 \subsubsection{Performance Considerations}
 The first optimization step for the project involved the implementation of region of interest cropping. This involved limiting the processing of the image to the region of interest, which contains the dartboard. This resulted in a reduction of between 60-70 percent of the total number of pixels processed compared to the whole frame \cite{Viola2001}. The output buffers are also pre-filled, which are then passed as arguments for OpenCV's in-place processing, thus eliminating the need for heap allocation. In the event that the early exit condition is met, with no motion detected, the processing pipeline takes a short time, less than 10 milliseconds, thus giving ample time for the UI thread.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Approximate per-stage runtime budget interpretation for practical operation.}
-	\label{tab:runtime_budget}
 	\begin{tabularx}{\linewidth}{@{}>{\RaggedRight\arraybackslash}X >{\centering\arraybackslash}p{3.2cm} >{\RaggedRight\arraybackslash}X@{}}
 		\toprule
 		\shortstack[l]{\textbf{Pipeline}\\\textbf{Stage}} & \shortstack{\textbf{Typical}\\\textbf{Cost Class}} & \shortstack[l]{\textbf{Optimization}\\\textbf{Used}} \\
@@ -56,7 +53,9 @@ The first optimization step for the project involved the implementation of regio
 		Overlay/debug composition & Low to Medium & Performed after detection commitment \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Approximate per-stage runtime budget interpretation for practical operation.}
+\label{tab:runtime_budget}
+\end{table}
 
 \section{Computer Vision Framework}
 
@@ -103,11 +102,8 @@ Based on the experiments performed, it was found that the ArUco method of calibr
 
 \vspace{\baselineskip}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Operational comparison of calibration strategies in this project.}
-	\label{tab:calibration_strategy_comparison}
 	\begin{tabularx}{\linewidth}{@{}X X X@{}}
 		\toprule
 		\textbf{Criterion} & \textbf{Manual Calibration} & \textbf{ArUco Calibration} \\
@@ -118,7 +114,9 @@ Based on the experiments performed, it was found that the ArUco method of calibr
 		Best fit scenario & Ad hoc temporary setups & Fixed or semi-permanent installations \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Operational comparison of calibration strategies in this project.}
+\label{tab:calibration_strategy_comparison}
+\end{table}
 
 \vspace{\baselineskip}
 
@@ -155,11 +153,8 @@ describe the outline of each region in the image.
 \subsubsection{Filtering of Irrelevant Regions}
 The regions are filtered by four checks before any of the tip coordinates are computed. The first check is that of area. Regions that are either below the empirically determined minimum or exceed the maximum possible cross-section area are eliminated. The second check involves the aspect ratio. Highly elongated regions are unlikely to correspond to a dart tip when viewed from above. The third check involves the shape solidity, which is given by the ratio of the contour area to the area of the convex hull. Irregular shapes resulting from reflections or cables have lower solidity values. The fourth check involves the spatial location of the region. Regions whose centroids are outside the known region of the board are eliminated. The number of regions that remain at this point per frame is usually either zero or one, occasionally two, before the tip localization.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Key detector parameters and operational role.}
-	\label{tab:detector_parameters}
 	\begin{tabularx}{\linewidth}{@{}X X X@{}}
 		\toprule
 		\textbf{Parameter} & \textbf{Role in Pipeline} & \textbf{Tradeoff Direction} \\
@@ -171,7 +166,9 @@ The regions are filtered by four checks before any of the tip coordinates are co
 		Known-dart suppression radius & Avoids repeated detection of already lodged darts & Larger radius reduces duplicates but may hide nearby new impacts \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Key detector parameters and operational role.}
+\label{tab:detector_parameters}
+\end{table}
 
 \vspace{\baselineskip}
 
@@ -190,14 +187,14 @@ Validate edge and out-of-bounds throws before locking values.
 The choice of frontend framework was driven by the need for a framework with a short development cycle, close integration with reactive state management, and good runtime performance on distributed client platforms. SvelteKit was chosen for this project due to its ability to compile declarative component definitions into optimized JavaScript code, bypassing the runtime package size penalty of virtual DOM frameworks like React and Vue.
 
 \subsubsection{Key Features of the Framework}
-The framework’s first-class support for file-system-based routing, server-side rendering, and progressive enhancement enabled a compact codebase with good cross-platform compatibility on Windows and Linux. This combination of features is a good match for the requirements of the dart detection system’s single-page game-like workflow.
+The framework's first-class support for file-system-based routing, server-side rendering, and progressive enhancement enabled a compact codebase with good cross-platform compatibility on Windows and Linux. This combination of features is a good match for the requirements of the dart detection system's single-page game-like workflow.
 
-Another advantage of this framework choice was the excellent integration with the TypeScript programming language. The framework’s toolchain provided good support for TypeScript’s type system, allowing for robust typing of route parameters, store payloads, and websocket event structures. This minimized integration errors with the backend code. In the early stages of development, this minimized runtime errors caused by incorrect data contracts.
+Another advantage of this framework choice was the excellent integration with the TypeScript programming language. The framework's toolchain provided good support for TypeScript's type system, allowing for robust typing of route parameters, store payloads, and websocket event structures. This minimized integration errors with the backend code. In the early stages of development, this minimized runtime errors caused by incorrect data contracts.
 
-The framework’s support for separating route-level loading logic and interactive component logic was another advantage. This feature was useful for this project since the setup pages have a different lifecycle than the game route. This separation of concerns at the route level was useful for correctness reasoning.
+The framework's support for separating route-level loading logic and interactive component logic was another advantage. This feature was useful for this project since the setup pages have a different lifecycle than the game route. This separation of concerns at the route level was useful for correctness reasoning.
 
 \subsubsection{Comparison with Other Frameworks}
-Other frameworks, like Angular and Next.js, were considered for this project but rejected in favor of SvelteKit due to their larger runtime bundle and configuration complexity for a single-page game-like workflow. SvelteKit’s lightweight nature made it a more suitable choice for this project.
+Other frameworks, like Angular and Next.js, were considered for this project but rejected in favor of SvelteKit due to their larger runtime bundle and configuration complexity for a single-page game-like workflow. SvelteKit's lightweight nature made it a more suitable choice for this project.
 
 Alternatives using React were not discounted on technical merit but do pose an extra layer of decision-making in terms of state libraries, routing strategies, and rendering paradigms. As a thesis project with limited code development time, reducing architectural decisions was a direct productivity gain. The SvelteKit framework provided sensible defaults to allow focus on application-specific problems: synchronization, accuracy in ruleset definitions, and analytics data quality.
 
@@ -226,7 +223,7 @@ The chosen websocket method further aligns with the system's interaction model, 
 \subsection{Architecture Approach: Browser-Based vs. Desktop}
 
 \subsubsection{Browser-Based Architecture Advantages}
-Considering that the application is only for desktop, other options, such as using Python GUI libraries (e.g., PyQt, Tkinter) or Java libraries (e.g., JavaFX, Swing), would have been viable. Yet, with the browser-based architecture using SvelteKit, the advantages over other approaches are significant, especially considering the application’s specific needs:
+Considering that the application is only for desktop, other options, such as using Python GUI libraries (e.g., PyQt, Tkinter) or Java libraries (e.g., JavaFX, Swing), would have been viable. Yet, with the browser-based architecture using SvelteKit, the advantages over other approaches are significant, especially considering the application's specific needs:
 \begin{itemize}
 	\item \textbf{Cross-Platform Compatibility}: Instantaneous compatibility with Windows, Linux, and macOS without the need for separate installers for each operating system.
 	\item \textbf{Deployment Simplicity}: No need to compile or distribute different versions for different operating systems.
@@ -236,7 +233,7 @@ Considering that the application is only for desktop, other options, such as usi
 \subsubsection{Rationale for Web-Based Selection}
 The cross-platform compatibility, deployment simplicity, and access to visualization libraries align with the need for cross-platform portability, especially considering the application scenario.
 
-This architecture approach is further advantageous from the perspective of maintainability, especially considering the application scenario. This is because, with the elimination of platform-specific release processes, the application becomes significantly easier to deploy, especially considering the application scenario. This means that the application’s operational process is now centered on server startup scripts, which is significantly easier to implement than client-side releases.
+This architecture approach is further advantageous from the perspective of maintainability, especially considering the application scenario. This is because, with the elimination of platform-specific release processes, the application becomes significantly easier to deploy, especially considering the application scenario. This means that the application's operational process is now centered on server startup scripts, which is significantly easier to implement than client-side releases.
 
 \vspace{\baselineskip}
 
@@ -267,7 +264,7 @@ For this project, the combination of HTML5 Canvas and Chart.js provides a good c
 \subsection{Database Selection}
 
 \subsubsection{SQLite Adoption}
-The selection process for the database system was influenced by the need for the application to function as a single-user application with local deployment. SQLite met the application’s constraints by providing an efficient, lightweight, file-based relational database system with ACID properties, requiring zero administration.
+The selection process for the database system was influenced by the need for the application to function as a single-user application with local deployment. SQLite met the application's constraints by providing an efficient, lightweight, file-based relational database system with ACID properties, requiring zero administration.
 
 \subsubsection{Design Rationale}
 SQLite does not need process management, unlike other client-server databases (e.g., PostgreSQL, MySQL). The volume of data to be managed by the application is relatively small, with data comprising game sessions, player information, and score events. In addition, using SQLite eliminates the risk of network partitioning or incorrect authentication, common issues with client-server databases, especially during local application evaluation.
@@ -282,7 +279,7 @@ For the purpose of this research, SQLite offers the advantage of inspectability.
 The FastAPI framework is used for the backend API due to its capability to support asynchronous API requests, generate OpenAPI schema automatically, and support Python type hints. In this application, the frontend is built using SvelteKit, which offers an integrated web server for serving static assets. In effect, the backend API is only responsible for providing data or event management services.
 
 \subsubsection{Architectural Alignment}
-FastAPI’s lightweight architecture, together with its support for asynchronous I/O, is advantageous for the application. This is because, with FastAPI, it is possible for the application’s backend to function as an independent process without the need for serving web requests, which is already addressed by SvelteKit. This is particularly advantageous during concurrent WebSocket or API requests during game sessions.
+FastAPI's lightweight architecture, together with its support for asynchronous I/O, is advantageous for the application. This is because, with FastAPI, it is possible for the application's backend to function as an independent process without the need for serving web requests, which is already addressed by SvelteKit. This is particularly advantageous during concurrent WebSocket or API requests during game sessions.
 
 The explicit schema definition via Pydantic within the framework has also been useful for ensuring stability within service contracts for modules written by different contributors. The validation of requests and responses at the API boundary also helped to reduce ambiguity within integrations and improved error reporting by providing structured error messages.
 

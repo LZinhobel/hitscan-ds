@@ -16,21 +16,20 @@ The technical capabilities of the system require setting up a multi-camera syste
 As a result, the system is complex and expensive, making it unsuitable for home use. This complexity in setting up the system is one of the factors that prompted the consideration of alternative methodologies based on a single-camera system.
 
 \vspace{\baselineskip}
-\begin{center}
-\captionsetup{type=table,hypcap=false}
-	\centering
-	\caption{Comparative overview of dominant automatic scoring approach families.}
-	\label{tab:related_work_comparison}
-	\begin{tabularx}{\linewidth}{@{} >{\hsize=0.9\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=0.9\hsize\centering\arraybackslash}X @{}}
-		\toprule
-		\textbf{Approach} & \shortstack[l]{\textbf{Primary}\\\textbf{Strength}} & \shortstack[l]{\textbf{Primary}\\\textbf{Weakness}} & \shortstack{\textbf{Consumer}\\\textbf{Suitability}} \\
-		\midrule
-		Multi-camera vision systems & High spatial observability and strong occlusion robustness & High setup/calibration complexity and high hardware cost & Low \\
-		Sensor or laser-based systems & Fast event triggering and reduced image-processing load & Material/mount dependency and limited visual verification & Medium \\
-		Single-camera classical CV (this work) & Low cost, maintainable stack, no training data dependency & Boundary sensitivity and bounce-out limitations & High \\
-		\bottomrule
-	\end{tabularx}
-\end{center}
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\linewidth}{@{} >{\hsize=0.9\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=1.1\hsize\arraybackslash}X >{\hsize=0.9\hsize\centering\arraybackslash}X @{}}
+        \toprule
+        \textbf{Approach} & \shortstack[l]{\textbf{Primary}\\\textbf{Strength}} & \shortstack[l]{\textbf{Primary}\\\textbf{Weakness}} & \shortstack{\textbf{Consumer}\\\textbf{Suitability}} \\
+        \midrule
+        Multi-camera vision systems & High spatial observability and strong occlusion robustness & High setup/calibration complexity and high hardware cost & Low \\
+        Sensor or laser-based systems & Fast event triggering and reduced image-processing load & Material/mount dependency and limited visual verification & Medium \\
+        Single-camera classical CV (this work) & Low cost, maintainable stack, no training data dependency & Boundary sensitivity and bounce-out limitations & High \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Comparative overview of dominant automatic scoring approach families.}
+    \label{tab:related_work_comparison}
+\end{table}
 \vspace{\baselineskip}
 
 \subsection{Laser and Sensor-Based Systems}
@@ -45,15 +44,13 @@ The sensor-based system provides reliable results for steel darts but also depen
 
 \section{Research on Sports Object Tracking}
 
-\subsection{Ball and Projectile Tracking}
-
-\subsubsection{Motion Segmentation Techniques}
+\subsection{Motion Segmentation Techniques}
 
 Motion segmentation techniques have been widely used in video analysis to segment moving objects in a given video. Background subtraction techniques, including adaptive Gaussian mixture model-based techniques, have been used to segment moving objects from the background \cite{Zivkovic2004}.
 
 These techniques have been widely used in sports object tracking to detect moving objects such as balls or projectiles. Edge detection techniques have also been used to improve the accuracy of localization. In edge detection techniques, object contour detection is used to improve localization accuracy. In object contour detection, edges in the image or video frame are detected to improve localization accuracy \cite{Canny1986}. For circular objects, a Hough transform-based detection technique can also be used \cite{Duda1972}. These techniques have been used to detect moving objects in a video frame.
 
-\subsubsection{Trajectory Estimation Methods}
+\subsection{Trajectory Estimation Methods}
 
 After detecting a moving object in the image or video frame, its trajectory can be estimated using state estimation techniques. In state estimation techniques, a Kalman filter-based technique can be used to estimate the trajectory of the object in the image or video frame \cite{Welch}.
 
@@ -61,13 +58,11 @@ This method is advantageous for detecting temporarily occluded balls or for esti
 
 \section{Existing Open Source Projects}
 
-\subsection{Dartboard Detection Tools}
-
-\subsubsection{Marker-Based Alignment}
+\subsection{Marker-Based Alignment}
 
 Fiducial markers have been used for camera calibration in various research prototypes. ArUco markers provide accurate pose estimation, especially in the presence of partial occlusion. By using multiple markers on the dartboard, it is possible to compute the homography between image coordinates and dartboard coordinates. This enables the computation of impact point coordinates in standard dartboard coordinates, irrespective of the camera perspective.
 
-\subsubsection{Geometric Modeling Approaches}
+\subsection{Geometric Modeling Approaches}
 
 Most systems, after camera calibration, have used geometric modeling for dartboard alignment. The geometric model consists of concentric rings and radial sectors. By identifying the nearest ring and sector boundaries, it is possible to determine the hit location. This approach is advantageous over machine learning-based methods, as it uses a deterministic process instead of mapping pixel coordinates to dartboard regions, making it more suitable for real-time applications due to lower computational costs.
 
@@ -88,23 +83,22 @@ In this space, classical computer vision offers a relevant alternative to learni
 Beyond pure detection accuracy, practical deployment requires balancing setup burden, interpretability, and maintenance overhead.
 
 \vspace{\baselineskip}
-\begin{center}
-\captionsetup{type=table,hypcap=false}
-	\centering
-	\caption{Qualitative decision matrix used to position the chosen approach.}
-	\label{tab:related_work_decision_matrix}
-	\begin{tabularx}{\linewidth}{@{} >{\arraybackslash}X >{\centering\arraybackslash}p{1.6cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{1.5cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{2.0cm} @{}}
-		\toprule
-		\shortstack{\textbf{Criterion}} & \shortstack{\textbf{Multi}\\\textbf{Cam}} & \shortstack{\textbf{Sensor/}\\\textbf{Laser}} & \shortstack{\textbf{ML}\\\textbf{Vision}} & \shortstack{\textbf{Classical}\\\textbf{CV}} & \shortstack{\textbf{Priority in}\\\textbf{This Thesis}} \\
-		\midrule
-		Hardware cost & High & Medium & Medium & Low & Low \\
-		Installation simplicity & Low & Medium & Medium & High & High \\
-		Model/data dependency & Low & Low & High & Low & Low \\
-		Explainability & Medium & Medium & Low & High & High \\
-		Recreational-home fit & Low & Medium & Medium & High & High \\
-		\bottomrule
-	\end{tabularx}
-\end{center}
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\linewidth}{@{} >{\arraybackslash}X >{\centering\arraybackslash}p{1.6cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{1.5cm} >{\centering\arraybackslash}p{1.8cm} >{\centering\arraybackslash}p{2.0cm} @{}}
+        \toprule
+        \shortstack{\textbf{Criterion}} & \shortstack{\textbf{Multi}\\\textbf{Cam}} & \shortstack{\textbf{Sensor/}\\\textbf{Laser}} & \shortstack{\textbf{ML}\\\textbf{Vision}} & \shortstack{\textbf{Classical}\\\textbf{CV}} & \shortstack{\textbf{Priority in}\\\textbf{This Thesis}} \\
+        \midrule
+        Hardware cost & High & Medium & Medium & Low & Low \\
+        Installation simplicity & Low & Medium & Medium & High & High \\
+        Model/data dependency & Low & Low & High & Low & Low \\
+        Explainability & Medium & Medium & Low & High & High \\
+        Recreational-home fit & Low & Medium & Medium & High & High \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Qualitative decision matrix used to position the chosen approach.}
+    \label{tab:related_work_decision_matrix}
+\end{table}
 \vspace{\baselineskip}
 
 The matrix highlights why a deterministic single-camera pipeline was selected. It does not maximize every individual metric, but it aligns best with the objective profile of low-cost recreational deployment under constrained hardware.

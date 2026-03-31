@@ -53,11 +53,8 @@ The camera distance was not based on any specific geometric constraint but rathe
 
 \vspace{\baselineskip}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Evaluation setup sheet used for repeatable test sessions.}
-	\label{tab:evaluation_setup_sheet}
 	\begin{tabularx}{\linewidth}{@{}X X@{}}
 		\toprule
 		\textbf{Parameter} & \textbf{Configured Value} \\
@@ -71,15 +68,16 @@ The camera distance was not based on any specific geometric constraint but rathe
 		Primary evaluation goal & Stable sector classification under practical throw scenarios \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Evaluation setup sheet used for repeatable test sessions.}
+\label{tab:evaluation_setup_sheet}
+\end{table}
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\linewidth]{pics/camera_setup.png}
 	\caption{Conceptual sketch of the evaluation setup geometry (camera angle and distance).}
 	\label{fig:evaluation_setup_placeholder}
-\end{center}
+\end{figure}
 
 
 \section{Evaluation Metrics}
@@ -114,11 +112,8 @@ Analysis of misclassifications identified three primary failure modes:
 \subsubsection{Error Proximity Analysis}
 The first two categories provided results that, although incorrect, were reasonable within a neighboring area rather than arbitrary data, which further reinforces the proximity of the localization to the actual impact location. This indicates that the underlying detection and localization pipeline is fundamentally sound, with errors occurring near decision boundaries rather than systematic offsets across the board.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Observed practical outcome classes during evaluation sessions.}
-	\label{tab:observed_outcome_classes}
 	\begin{tabularx}{\linewidth}{@{}X c X@{}}
 		\toprule
 		\textbf{Outcome Class} & \textbf{Relative Frequency} & \textbf{Typical Cause} \\
@@ -129,7 +124,9 @@ The first two categories provided results that, although incorrect, were reasona
 		Correctly ignored non-hit event & Medium & Out-of-bounds throw or no persistent board impact \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Observed practical outcome classes during evaluation sessions.}
+\label{tab:observed_outcome_classes}
+\end{table}
 
 \section{Accuracy Consolidation}\label{sec:accuracy_consolidation}
 
@@ -146,11 +143,8 @@ For each setup, accuracy is calculated as:
 
 \subsection{Setup A: Measured Outcomes}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Outcome counts for Setup A.}
-	\label{tab:accuracy_setup_a_outcomes}
 	\begin{tabularx}{\linewidth}{@{}X c X@{}}
 		\toprule
 		\textbf{Outcome Category} & \textbf{Count} & \textbf{Interpretation} \\
@@ -163,7 +157,9 @@ For each setup, accuracy is calculated as:
 		\textbf{Total throws} & \textbf{55} & Sum of all outcome categories \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Outcome counts for Setup A.}
+\label{tab:accuracy_setup_a_outcomes}
+\end{table}
 
 \vspace{\baselineskip}
 
@@ -178,11 +174,8 @@ For each setup, accuracy is calculated as:
 
 \subsection{Setup B: Alternative Setup}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Setup B specification sheet.}
-	\label{tab:accuracy_setup_b_spec}
 	\begin{tabularx}{\linewidth}{@{}X X@{}}
 		\toprule
 		\textbf{Parameter} & \textbf{Value} \\
@@ -195,15 +188,14 @@ For each setup, accuracy is calculated as:
 		Lighting & Same ring light \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Setup B specification sheet.}
+\label{tab:accuracy_setup_b_spec}
+\end{table}
 
 \vspace{\baselineskip}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Outcome counts for Setup B.}
-	\label{tab:accuracy_setup_b_outcomes}
 	\begin{tabularx}{\linewidth}{@{}X c X@{}}
 		\toprule
 		\textbf{Outcome Category} & \textbf{Count} & \textbf{Interpretation} \\
@@ -216,7 +208,9 @@ For each setup, accuracy is calculated as:
 		\textbf{Total throws} & \textbf{48} & Sum of all outcome categories \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Outcome counts for Setup B.}
+\label{tab:accuracy_setup_b_outcomes}
+\end{table}
 
 \vspace{\baselineskip}
 
@@ -227,11 +221,8 @@ For each setup, accuracy is calculated as:
 
 \vspace{\baselineskip}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Overall accuracy summary across both setups.}
-	\label{tab:accuracy_overall_summary}
 	\begin{tabularx}{\linewidth}{@{}X c c c@{}}
 		\toprule
 		\textbf{Scope} & \textbf{Total Throws} & \textbf{Correct} & \textbf{Computed Accuracy (\%)} \\
@@ -241,7 +232,9 @@ For each setup, accuracy is calculated as:
 		\textbf{Combined} & \textbf{103} & \textbf{72} & \textbf{70} \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Overall accuracy summary across both setups.}
+\label{tab:accuracy_overall_summary}
+\end{table}
 \setauthor{\firstauthor}
 \section{Frontend, State, and Analytics Evaluation}
 \subsection{Real-Time Interface Responsiveness}
@@ -264,11 +257,8 @@ Undo functionality was verified with normal and boundary condition scenarios, fo
 \subsubsection{Cross-View State Continuity}
 Switching routes between setup, game, and statistics views was performed several times for active and finished sessions. The state was always consistent without requiring a full page reload. This verifies the store implementation and confirms one of the primary frontend verification goals: ensuring game continuity for navigating to analytics and configuration views.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Verification scenarios for the backend implementation with the observed results.}
-	\label{tab:backend_verification_scenarios}
 	\begin{tabularx}{\linewidth}{@{}X X X@{}}
 		\toprule
 		\textbf{Scenario} & \textbf{Expected Behavior} & \textbf{Observed Result} \\
@@ -280,7 +270,9 @@ Switching routes between setup, game, and statistics views was performed several
 		Switch to statistics and return to game & No loss of active session context & Confirmed for route transitions \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Verification scenarios for the backend implementation with the observed results.}
+\label{tab:backend_verification_scenarios}
+\end{table}
 
 \subsection{Multi-Client Synchronization Behavior}
 
@@ -299,11 +291,11 @@ The statistics view was found to behave correctly through comparisons with manua
 New player instances with sparse data were used to test the analytics view's handling of sparse data. The UI was found to behave correctly in this case scenario, presenting stable values instead of undefined or not a number values in cases where data was sparse or missing. This shows that the code correctly implements guard clauses against presentation-level failure in cases where data is missing or sparse.
 
 \subsubsection{Interpretability of Statistical Views}
-From an operational viewpoint, the chosen metric set has been found to be adequate for rapid interpretation following a game session by non-technical players. Players can easily identify immediate trends, such as having a low hit percentage despite high throw volume, without the need for external tooling. This validates the thesis’s objective of providing accessible and meaningful feedback in conjunction with automated scoring.
+From an operational viewpoint, the chosen metric set has been found to be adequate for rapid interpretation following a game session by non-technical players. Players can easily identify immediate trends, such as having a low hit percentage despite high throw volume, without the need for external tooling. This validates the thesis's objective of providing accessible and meaningful feedback in conjunction with automated scoring.
 
 \begin{lstlisting}[numbers=left,caption=Practical validation protocol for frontend and statistics behavior, label=lst:frontend_stats_validation_protocol]
 Start game with known ruleset and two predefined players.
-Determineistic throw sequence with expected score computation.
+Deterministic throw sequence with expected score computation.
 Bust and undo paths are triggered deliberately.
 Score state is compared to manual step-by-step computation.
 Statistics view is opened and compared to manual computation.
@@ -331,13 +323,12 @@ Given a 26 FPS rate and ring light illumination, motion blur was not a significa
 
 The ring light installation was a significant factor in minimizing potential issues. The few errors that occurred were due to camera vibrations.
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\linewidth]{pics/generated/lighting_comparison_sketch.png}
 	\caption{Conceptual before/after sketch of lighting impact on shadow behavior and contour stability.}
 	\label{fig:lighting_comparison_placeholder}
-\end{center}
+\end{figure}
 
 \section{Experimental Results}
 
@@ -376,11 +367,8 @@ Log each mismatch under one of the defined failure categories.
 Re-test after any parameter adjustment to detect regressions.
 \end{lstlisting}
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
 	\centering
-	\caption{Failure taxonomy used for structured error logging.}
-	\label{tab:failure_taxonomy}
 	\begin{tabularx}{\linewidth}{@{}X X@{}}
 		\toprule
 		\textbf{Category} & \textbf{Operational Description} \\
@@ -391,4 +379,6 @@ Re-test after any parameter adjustment to detect regressions.
 		Vibration-induced instability & Mount/board coupling causes global frame motion and detector overload \\
 		\bottomrule
 	\end{tabularx}
-\end{center}
+\caption{Failure taxonomy used for structured error logging.}
+\label{tab:failure_taxonomy}
+\end{table}

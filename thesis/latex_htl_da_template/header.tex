@@ -70,6 +70,7 @@ numberstyle=\tiny,
 showspaces=false,
 showtabs=false,
 breaklines=true,
+captionpos=b,
 lineskip=-1pt,
 tabsize=2,
 showstringspaces=false,
@@ -104,8 +105,9 @@ morekeywords={base,var,in,out,dynamic,from,where,select,orderby,function,\$,grou
 \usepackage{caption}
 \DeclareCaptionFont{white}{\color{white}}
 \DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43, 0.35, 0.35,0.01}{\parbox{\textwidth}{\hspace{10pt}#1#2#3}}}
-\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white} 
-\captionsetup[table]{justification=centering, singlelinecheck=false}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white,position=bottom} 
+\captionsetup[figure]{position=bottom}
+\captionsetup[table]{position=bottom,justification=centering,singlelinecheck=false}
 
 \usepackage{subcaption}
 
@@ -151,6 +153,7 @@ morekeywords={base,var,in,out,dynamic,from,where,select,orderby,function,\$,grou
 \counterwithout{table}{chapter}
 \AtBeginDocument{
 	\counterwithout{lstlisting}{chapter}
+	\floatplacement{lstlisting}{H}
 	\urlstyle{sf}
 }
 \newcounter{RPages}
@@ -163,6 +166,8 @@ morekeywords={base,var,in,out,dynamic,from,where,select,orderby,function,\$,grou
 \setcounter{topnumber}{3}
 \setcounter{bottomnumber}{2}
 \setcounter{totalnumber}{5}
+\floatplacement{figure}{H}
+\floatplacement{table}{H}
 \renewcommand{\topfraction}{0.9}
 \renewcommand{\bottomfraction}{0.8}
 \renewcommand{\textfraction}{0.07}

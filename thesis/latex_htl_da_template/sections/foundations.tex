@@ -6,13 +6,12 @@
 
 The camera image is a projection of the real-world scene onto the two-dimensional image plane. The projection is achieved according to the pinhole camera model, in which each point in the real world is projected to the image sensor through the camera center as a straight line \cite{Hartley2004}.
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.65\linewidth]{pics/pinholeCamera.png}
     \caption{Pinhole camera projection model. Public domain image from Wikimedia Commons, original author: DrBob, redraw: Pbroks13.}
     \label{fig:pinhole_model}
-\end{center}
+\end{figure}
 
 Due to the projection nature, the measurements in the image are not proportional to the real-world measurements. Far objects are perceived as smaller than near objects. Even circular objects may be perceived as elliptical depending on the viewpoint. Such is the situation with the dartboard, as it is planar but viewed from an angle \cite{Hartley2004}.
 
@@ -26,25 +25,23 @@ The real lens does not follow the pinhole camera model. Due to lens distortion, 
 
 The dartboard is planar, so the projective transformation is used to map the image coordinates to the dartboard coordinates \cite{Hartley2004}. 
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.75\linewidth]{pics/homography.png}
     \caption{Planar homography mapping between camera image and world plane. Image by Faisal Qureshi, Ontario Tech University, licensed under CC BY-NC 4.0.}
     \label{fig:homography}
-\end{center}
+\end{figure}
 
 \subsubsection{Image-to-World Mapping}
 
 During calibration, reference points on the board are matched with their image positions. This correspondence defines a mapping from camera pixels to board coordinates, allowing later detections to be interpreted in the dartboard reference frame \cite{Hartley2004}.
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.4\linewidth]{pics/generated/coordinate_mapping.png}
     \caption{Conceptual mapping chain from camera pixels to final score token.}
     \label{fig:coordinate_mapping_chain}
-\end{center}
+\end{figure}
 
 \section{Dartboard Geometry}
 
@@ -68,11 +65,8 @@ The camera provides a position in pixel space. This is a function of the camera'
 
 After calibration, detected points can be represented in a normalized board coordinate system that is independent of the raw image perspective.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
     \centering
-    \caption{Coordinate representations used across scoring stages.}
-    \label{tab:coordinate_spaces}
     \begin{tabularx}{\linewidth}{@{}X X X@{}}
         \toprule
         \textbf{Space} & \textbf{Typical Variables} & \textbf{Purpose} \\
@@ -83,7 +77,9 @@ After calibration, detected points can be represented in a normalized board coor
         Symbolic scoring space & \texttt{S20}, \texttt{D16}, \texttt{T19}, \texttt{25}, \texttt{50} & Game-rule compatible hit representation \\
         \bottomrule
     \end{tabularx}
-\end{center}
+    \caption{Coordinate representations used across scoring stages.}
+    \label{tab:coordinate_spaces}
+\end{table}
 
 \section{Principles of Motion Detection and Object Tracking}
 

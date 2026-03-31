@@ -1,24 +1,22 @@
 \setauthor{\firstauthor}
 \section{Review of Objectives}
-The overall aim of this thesis has been to integrate a low-cost system for automatic scoring within a game of steel-tip darts, eliminating manual score tracking but retaining the “feeling” of a traditional game. This has been successfully accomplished through a completed prototype.
+The overall aim of this thesis has been to integrate a low-cost system for automatic scoring within a game of steel-tip darts, eliminating manual score tracking but retaining the "feeling" of a traditional game. This has been successfully accomplished through a completed prototype.
 
 While there is a high degree of coupling within this project, there is a distinct separation of modules in the end. This has been useful for both maintenance and performance.
 
-\subsection{Functional Objectives}
-
-\subsubsection{Web Interface and Real-Time Interaction}
+\subsection{Web Interface and Real-Time Interaction}
 One of the key objectives of this project has been to design a system such that it can be interacted with through a variety of devices within a local environment, yet present a single source of truth for users. This has been accomplished through a completed frontend, where a variety of route-based workflows, reactive stores, and websockets have been implemented to present a seamless experience to users.
 
 While interacting with this system, it has also been important to consider how users will interact with it under suboptimal conditions. This has been accomplished through a variety of states within a UI, ensuring operator confidence under a variety of scenarios.
 
 This has been an important part of ensuring that real-time interaction is not simply a transport-layer concern but also a concern for states and interfaces.
 
-\subsubsection{Game Logic and State Management}
+\subsection{Game Logic and State Management}
 Support for 301/501 gameplay rules, bust handling, and checkout constraint checking was provided through the frontend ruleset engine. The choice of using deterministic state transitions for modeling the game resulted in a much simpler and more deterministic set of test cases. In addition, there was less ambiguity in edge cases since everything is driven through ordered throw events.
 
 From a software engineering point of view, this part of the system illustrates how simple reactive state transitions are adequate for modeling simple reactive systems where transitions are explicit. In this project, there was no need for using complex orchestration tools for creating a robust state machine.
 
-\subsubsection{Statistics and Persistence-Oriented Features}
+\subsection{Statistics and Persistence-Oriented Features}
 Another goal for this thesis was to extend the system beyond simple scoring and into more useful retrospective analysis. As a result, the final implementation includes a persistent match history model and analytics views with useful metrics.
 
 The chosen split computation strategy for this problem was found to be useful. Relational aggregations are performed backend-side, and lightweight derivative metrics are performed frontend-side. This results in compact network traffic and allows for immediate update of the UI when switching between players or revisiting previous sessions. In addition, defensive programming for handling sparse or missing data points was useful in preventing undefined results in the analytics view.
@@ -39,15 +37,15 @@ The final architecture offers four strengths:
 \end{itemize}
 
 \subsection{Remaining Constraints}
-While the solution has been successful, there are several constraints. Vision reliability can be compromised by extreme geometric or lighting irregularities. The solution is also optimized for local use, not for a more robust distribution. In terms of application, the solution’s analytical depth is limited, although this is a conscious choice for simplicity and response. These constraints, although present, are well beyond the scope of this project. 
+While the solution has been successful, there are several constraints. Vision reliability can be compromised by extreme geometric or lighting irregularities. The solution is also optimized for local use, not for a more robust distribution. In terms of application, the solution's analytical depth is limited, although this is a conscious choice for simplicity and response. These constraints, although present, are well beyond the scope of this project. 
 
 \section{Reflection on Division of Work}
-The appendix established a collaboration model where web interface, vision, statistics, and persistence are primarily the first author’s responsibility, and camera/hardware, as well as detection, are primarily the second author’s responsibility. The structure of this document now more clearly reflects this model, where discussion of the frontend, integration, and statistics is primarily the first author’s responsibility, and discussion of the camera, hardware, and detection is primarily the second author’s responsibility.
+The appendix established a collaboration model where web interface, vision, statistics, and persistence are primarily the first author's responsibility, and camera/hardware, as well as detection, are primarily the second author's responsibility. The structure of this document now more clearly reflects this model, where discussion of the frontend, integration, and statistics is primarily the first author's responsibility, and discussion of the camera, hardware, and detection is primarily the second author's responsibility.
 
 This alignment has helped to improve the technical coherence and traceability of the contributions. It has also reduced the ambiguity in the mixed sections, where software integration topics like event contracts, synchronization, and correction workflows are now included in the first author domain, while physically constrained detection behavior remains in the second author domain.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
+\centering
 \begin{tabularx}{\linewidth}{@{}X X@{}}
 \toprule
 \textbf{Focus Area} & \textbf{Implemented Outcome} \\
@@ -60,7 +58,7 @@ Statistics and persistence integration & Persistent match history with interpret
 \end{tabularx}
 \caption{Contribution-oriented perspective on implemented software outcomes.}
 \label{tab:summary_contribution_focus}
-\end{center}
+\end{table}
 
 \section{Potential Enhancements}
 

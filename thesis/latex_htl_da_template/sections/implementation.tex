@@ -9,7 +9,7 @@ The data flow of the proposed system is structured as a three-tier architecture,
 Input from a webcam is captured and processed by the detection backend, where OpenCV is used for motion analysis and geometric calibration for dart impact detection and computation of segment scores. The proposed detection pipeline utilizes frame differencing and contour detection techniques for isolating dart impacts from static background elements, where a score is generated for each segment of the dartboard based on coordinate mapping. 
 
 \subsection{Event Emission and Frontend Update}
-After detecting a valid throw, the backend emits events containing scored segment information through a WebSocket connection, which are asynchronously received by the frontend’s game page component. The frontend applies the proposed game logic rules for updating the player’s turn, decrementing the scores, and handling special cases such as busts and invalid throws. 
+After detecting a valid throw, the backend emits events containing scored segment information through a WebSocket connection, which are asynchronously received by the frontend's game page component. The frontend applies the proposed game logic rules for updating the player's turn, decrementing the scores, and handling special cases such as busts and invalid throws. 
 
 \subsection{Persistence and Data Synchronization}
 At the same time, processed event data is sent to the database back-end via RESTful API calls to persist data for later analysis. This event-driven design provides fast feedback to users while ensuring data accuracy and integrity for later analysis. This modular design where detection, logic processing, and persistence layers are separated optimizes system performance.
@@ -33,12 +33,11 @@ The \emph{Game} entity stores player ids participating in a game, initial scorin
 \subsubsection{Score Entity}
 The \emph{Score} entity is used as a transactional entity to associate turn outcomes with player and game data. This data is used as a foundation for later analysis where player performance is evaluated on the basis of aggregated statistics per player per completed game.
 \subsection{Entity Relationship Visualization}
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
     \centering
     \includegraphics[scale=0.5]{pics/dataModel.png}
     \caption{PlantUML diagram of the data model}
-\end{center}
+\end{figure}
 
 \vspace{\baselineskip}
 
@@ -79,12 +78,11 @@ The detection process comprises two stages. The first is to determine the positi
 
 \vspace{\baselineskip}
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
     \centering
     \includegraphics[scale=0.3]{pics/earlyCalibration.jpg}
     \caption{Early Prototype of the System with the calibration rings drawn on the camera feed.}
-\end{center} 
+\end{figure} 
 
 \vspace{\baselineskip}
 
@@ -111,8 +109,10 @@ This temporal separation of camera access between the two components eliminates 
 The second challenge encountered during the implementation process resulted from the lack of a standardized camera identification process. This meant that the Python environment, together with the browser, had an independent camera identification process. This process is not standardized, making it impossible to ensure that the user-selected camera index within the WebRTC environment is the same as the camera index within the OpenCV environment. This meant that the user could not be guaranteed to select the correct camera, especially if they are not computer experts. This challenge, however, was mitigated by the assumption that within the single-camera scenario, where only an external camera is connected with the possible addition of the computer's internal camera, both environments would enumerate the cameras in the same order. This meant that the first camera would always correspond to the same device. This assumption provided satisfactory results during the testing phase.
 
 \subsubsection{Limitations and User Guidance}
-The assumption, however, introduced limitations, especially within the multi-camera scenario, where the camera enumeration process would not always follow the same order. This meant that the user would not always be able to select the correct camera. In order to limit the effect of the assumption, an information box is included within the user interface, providing guidance to the user on the need to consider using the single-camera scenario for optimal results. This is a reasonable solution, considering the single-camera scenario is the only scenario that is likely to be encountered by the target audience.\subsubsection{Coordinate System Definition}
-The definition and persistence of the coordinate transform from image space to dartboard scoring regions was simplified by the geometric compatibility between the frontend WebRTC video stream and the backend OpenCV frame acquisition: both environments operate on frames with identical pixel dimensions and color spaces. The calibration workflow constructs an HTML5 canvas element dimensioned to match the video frame size, which serves as the rendering surface for interactive ring adjustment overlays. Calibration parameters—specifically the center coordinates ($c_x$, $c_y$), scale factor, and anisotropic stretch coefficients ($\text{stretch}_x$, $\text{stretch}_y$) for each concentric ring—are captured through user interaction and serialized to JSON format. This structured data is transmitted to the detection backend via HTTP, where it is persisted to disk as a configuration file. Upon subsequent application launches, the detection backend automatically loads the persisted calibration parameters, eliminating the requirement for recalibration and ensuring calibration consistency across multiple gameplay sessions. 
+The assumption, however, introduced limitations, especially within the multi-camera scenario, where the camera enumeration process would not always follow the same order. This meant that the user would not always be able to select the correct camera. In order to limit the effect of the assumption, an information box is included within the user interface, providing guidance to the user on the need to consider using the single-camera scenario for optimal results. This is a reasonable solution, considering the single-camera scenario is the only scenario that is likely to be encountered by the target audience.
+
+\subsubsection{Coordinate System Definition}
+The definition and persistence of the coordinate transform from image space to dartboard scoring regions was simplified by the geometric compatibility between the frontend WebRTC video stream and the backend OpenCV frame acquisition: both environments operate on frames with identical pixel dimensions and color spaces. The calibration workflow constructs an HTML5 canvas element dimensioned to match the video frame size, which serves as the rendering surface for interactive ring adjustment overlays. Calibration parameters specifically the center coordinates ($c_x$, $c_y$), scale factor, and anisotropic stretch coefficients ($\text{stretch}_x$, $\text{stretch}_y$) for each concentric ring are captured through user interaction and serialized to JSON format. This structured data is transmitted to the detection backend via HTTP, where it is persisted to disk as a configuration file. Upon subsequent application launches, the detection backend automatically loads the persisted calibration parameters, eliminating the requirement for recalibration and ensuring calibration consistency across multiple gameplay sessions. 
 \subsection{Processing Calibration Data}
 As previously mentioned, the calibration data is saved in the detection backend as a JSON file. 
 \begin{lstlisting}[numbers=left,caption=Example of the calibration data JSON file, label=lst:calibration_data]
@@ -157,8 +157,7 @@ diff = cv2.absdiff(self.bg_frame, blurred)
 thresh = self._apply_filter_pipeline(diff)
 \end{lstlisting}
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
   \centering
   \begin{subfigure}{0.31\linewidth}
     \centering
@@ -179,7 +178,7 @@ thresh = self._apply_filter_pipeline(diff)
   \end{subfigure}
   \caption{Frame differencing stage.}
   \label{fig:dart_detection_diff_00062}
-\end{center}
+\end{figure}
 
 \subsubsection{Mask Generation}
 Subsequent to the differencing step, a fixed thresholding process is employed, where the threshold value can be adjusted using a trackbar. The resulting image is then subjected to morphological refinement, where two dilation and one erosion process take place. This is then followed by the proposed closing process that aims at joining disjointed regions that correspond to the foreground region of interest.
@@ -198,8 +197,7 @@ thresh = cv2.erode(thresh, None, iterations=1)
 thresh = self._connect_dart_parts(thresh)
 \end{lstlisting}
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
   \centering
   \begin{subfigure}{0.31\linewidth}
     \centering
@@ -241,7 +239,7 @@ thresh = self._connect_dart_parts(thresh)
 
   \caption{Mask-generation pipeline detail.}
   \label{fig:dart_detection_mask_00062}
-\end{center}
+\end{figure}
 
 
 \subsection{Blob Detection and Filtering}
@@ -298,8 +296,7 @@ if tip is not None and centroid is not None:
     return [], thresh, contour_boxes, motion_level
 \end{lstlisting}
 
-\begin{center}
-\captionsetup{type=figure,hypcap=false}
+\begin{figure}[H]
   \centering
   \begin{subfigure}{0.47\linewidth}
     \centering
@@ -314,7 +311,7 @@ if tip is not None and centroid is not None:
   \end{subfigure}
   \caption{Contour filtering and final dart-tip localization.}
   \label{fig:dart_detection_final_00062}
-\end{center}
+\end{figure}
 
 \subsubsection{Line Fitting Techniques}
 The process of line fitting for the dart shaft was conceptually explored during the implementation process but was eventually dropped. From an implementation perspective, the use of the "merged contour" for the hull estimation was found to provide a more stable outcome under noisy board texture and fragmentation. The final version of the detector thus uses a contour-based fallback, rather than a line model, by selecting the leftmost point of the overall contour stack if the tip fails.
@@ -372,28 +369,27 @@ The rendering of the virtual dartboard and its interactive overlays is accomplis
 The rendering pipeline was designed with a strict separation between domain data and drawing primitives. Score events are transformed into a normalized internal marker representation before any canvas operation is performed. As a result, visual style adjustments (color, marker shape, label density) can be implemented without changing synchronization logic or score computation. This separation was beneficial when tuning readability for different screen sizes.
 
 \subsubsection{Coordinate Mapping Between View and Backend}
-To ensure accurate mapping between backend-reported hit locations and frontend visual feedback the frontend implements a coordinate transformation pipeline. Canvas coordinates, which are inherently dependent on the current viewport size and device pixel ratio, are normalized to a canonical board coordinate system. Calibration parameters, obtained during the setup phase, define the geometric relationship between the camera-captured board and the rendered canvas, allowing for mapping between frontend and backend coordinate spaces. 
+To ensure accurate mapping between backend-reported hit locations and frontend visual feedback, the frontend implements a coordinate transformation pipeline. Canvas coordinates, which are inherently dependent on the current viewport size and device pixel ratio, are normalized to a canonical board coordinate system. Calibration parameters, obtained during the setup phase, define the geometric relationship between the camera-captured board and the rendered canvas, allowing for mapping between frontend and backend coordinate spaces.
 
 To reduce drift between coordinate spaces, the mapping implementation performs scaling and offset transformations in a fixed order and stores precomputed factors where possible. This avoids repeated floating-point recomputation on each render cycle and lowers the risk of frame-to-frame marker jitter. Additionally, the implementation distinguishes between display coordinates and scoring coordinates, so visual interpolation effects do not modify the authoritative score event payload.
 
 \subsubsection{Visual Feedback and Error States}
 There is also immediate visual feedback in the user interface. For a valid throw, there is a change in the scoreboard according to the points scored, and there is a visual marker on the dartboard. For an invalid throw, there is an X marked on the scoreboard. In this case, the virtual dartboard has limitations, so an out-of-bounds throw is not shown on the dartboard; it is shown just as a missed throw. All this is to ensure maximum awareness, minimum incorrect user actions, and a seamless interface in all states.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
+\begin{table}[H]
   \centering
-  \caption{UI feedback states.}
-  \label{tab:ui_feedback_states_todo}
-  \begin{tabularx}{\linewidth}{@{}X X X@{}}
+  \begin{tabularx}{\linewidth}{@{}X X@{}}
     \toprule
     \textbf{State} & \textbf{Current UI Behavior} \\
     \midrule
     Valid hit & Shows score update and visual marker\\
-    Bust & Clears Scores out of Scoreboard\\
-    Miss / out-of-bounds & Shows miss on Scoreboard \\
+    Bust & Clears scores on the scoreboard\\
+    Miss / out-of-bounds & Shows miss on the scoreboard \\
     \bottomrule
   \end{tabularx}
-\end{center}
+  \caption{UI feedback states.}
+  \label{tab:ui_feedback_states_todo}
+\end{table}
 
 
 \subsection{Game UI}
@@ -508,9 +504,8 @@ It was observed through experimental results that the most balanced approach for
 
 \setauthor{\firstauthor}
 \section{System Integration}
-\subsection{Hardware-Software Interaction}
 
-\subsubsection{Pipeline Latency}
+\subsection{Pipeline Latency}
 
 System integration links three independently developed modules: image-based detection, game-state orchestration, and persistence/statistics services. The integration objective was not only functional interoperability but also predictable latency under realistic gameplay pacing. The event path starts with a detected hit in the vision backend, continues through websocket transport to the frontend game logic, and ends with asynchronous persistence and UI refresh.
 
@@ -518,7 +513,7 @@ From the perspective of user experience, the decisive metric is perceived respon
 
 To keep module boundaries explicit, integration contracts were reduced to stable payload structures: event type, scored segment value, optional coordinate metadata, and game/session context identifiers. Restricting the interface surface in this way simplified debugging and reduced the probability of cross-module regressions when internal implementations evolved during iterative development.
 
-\subsubsection{Failure Isolation Between Modules}
+\subsection{Failure Isolation Between Modules}
 A core integration principle was failure isolation. If one subsystem enters a degraded state, the remaining subsystems should continue operating as far as possible:
 \begin{itemize}
   \item If persistence requests fail, the gameplay view remains active and marks affected events for retry.
@@ -528,11 +523,7 @@ A core integration principle was failure isolation. If one subsystem enters a de
 
 This isolation approach was essential for practical testing because it transformed critical faults into recoverable states instead of forcing full application restarts.
 
-\subsubsection{Observability and Diagnostics}
+\subsection{Observability and Diagnostics}
 Integration debugging was supported by lightweight runtime observability: timestamped event logs, explicit connection status, and structured error labels for transport, logic, and persistence layers. These diagnostics enabled quick attribution of anomalies to the responsible subsystem and reduced ambiguity during collaborative development between authors.
 
 \setauthor{\secondauthor}
-
-\subsection{System Limitations}
-
-\subsubsection{Environmental Dependencies}

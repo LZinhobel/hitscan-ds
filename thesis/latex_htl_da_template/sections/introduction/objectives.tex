@@ -20,7 +20,7 @@ Since it is impossible for the auto hit detection mechanism to be 100\% effectiv
 
 \subsubsection{Persistent Player-Centric Statistics}
 
-In addition to displaying the scores, the software will also need to include a player-centric statistics system that can be understood by the average user. This means converting the raw data of throws into useful information, such as hit percentage, win percentage, distribution, etc., so that the software can be useful for gameplay as well as performance analysis of a player’s throws.
+In addition to displaying the scores, the software will also need to include a player-centric statistics system that can be understood by the average user. This means converting the raw data of throws into useful information, such as hit percentage, win percentage, distribution, etc., so that the software can be useful for gameplay as well as performance analysis of a player's throws.
 
 \subsection{Technical Objectives}
 
@@ -30,7 +30,7 @@ The software will need to recognize when a dart hits the board, differentiate it
 
 \subsubsection{Manual and Marker-Based Calibration Concepts}
 
-Since the software will need a calibration step where it maps the image coordinates onto the dartboard’s scoring areas, a manual workflow and a marker workflow will be considered. This will allow the team to weigh the trade-offs between simplicity and precision when it comes to the calibration process.
+Since the software will need a calibration step where it maps the image coordinates onto the dartboard's scoring areas, a manual workflow and a marker workflow will be considered. This will allow the team to weigh the trade-offs between simplicity and precision when it comes to the calibration process.
 
 \subsubsection{Deterministic Frontend State Transitions}
 
@@ -40,22 +40,21 @@ Since the frontend will need to apply the rules of the game deterministically, m
 
 To ensure methodological consistency, each of the high-level objectives was carefully matched with the technical mechanisms supporting it and then validated in the evaluation chapter.
 
-\begin{center}
-\captionsetup{type=table,hypcap=false}
-	\centering
-	\caption{Traceability from objectives to implementation mechanisms and evaluation evidence.}
-	\label{tab:objective_traceability}
-	\begin{tabularx}{\linewidth}{@{}X X X@{}}
-		\toprule
-		\textbf{Objective} & \textbf{Implementation Mechanism} & \textbf{Evaluation Evidence} \\
-		\midrule
-		Automatic hit detection & Motion threshold pipeline with contour-based tip estimation & Sector-level accuracy and failure analysis in evaluation chapter \\
-		Real-time score feedback & Backend event emission and frontend state update through WebSocket & Practical responsiveness observations during play sessions \\
-		Reliable board mapping & Manual/marker calibration and coordinate transformation & Calibration-related error categories and boundary behavior analysis \\
-		Low-cost accessibility & Single-camera, CPU-only classical CV pipeline & Feasibility on consumer hardware without dedicated accelerators \\
-		\bottomrule
-	\end{tabularx}
-\end{center}
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\linewidth}{@{}X X X@{}}
+        \toprule
+        \textbf{Objective} & \textbf{Implementation Mechanism} & \textbf{Evaluation Evidence} \\
+        \midrule
+        Automatic hit detection & Motion threshold pipeline with contour-based tip estimation & Sector-level accuracy and failure analysis in evaluation chapter \\
+        Real-time score feedback & Backend event emission and frontend state update through WebSocket & Practical responsiveness observations during play sessions \\
+        Reliable board mapping & Manual/marker calibration and coordinate transformation & Calibration-related error categories and boundary behavior analysis \\
+        Low-cost accessibility & Single-camera, CPU-only classical CV pipeline & Feasibility on consumer hardware without dedicated accelerators \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Traceability from objectives to implementation mechanisms and evaluation evidence.}
+    \label{tab:objective_traceability}
+\end{table}
 
 \subsection{Acceptance Criteria Snapshot}
 
