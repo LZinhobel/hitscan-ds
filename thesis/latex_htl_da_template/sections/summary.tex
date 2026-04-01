@@ -14,7 +14,7 @@ This has been an important part of ensuring that real-time interaction is not si
 \subsection{Game Logic and State Management}
 Support for 301/501 gameplay rules, bust handling, and checkout constraint checking was provided through the frontend ruleset engine. The choice of using deterministic state transitions for modeling the game resulted in a much simpler and more deterministic set of test cases. In addition, there was less ambiguity in edge cases since everything is driven through ordered throw events.
 
-From a software engineering point of view, this part of the system illustrates how simple reactive state transitions are adequate for modeling simple reactive systems where transitions are explicit. In this project, there was no need for using complex orchestration tools for creating a robust state machine.
+From a software engineering point of view, this part of the system illustrates how simple reactive state transitions are adequate for modeling simple reactive systems where transitions are explicit.
 
 \subsection{Statistics and Persistence-Oriented Features}
 Another goal for this thesis was to extend the system beyond simple scoring and into more useful retrospective analysis. As a result, the final implementation includes a persistent match history model and analytics views with useful metrics.
@@ -63,7 +63,7 @@ Statistics and persistence integration & Persistent match history with interpret
 \section{Potential Enhancements}
 
 \subsubsection{Richer Analytics and Session Intelligence}
-Further improvements to the software could be made to the statistics module, for example, by providing rolling averages, distribution of checkouts in the checkout class, and consistency trends in specific segments. A particularly interesting potential is in the progression analysis between sessions, in which players can compare their recent performance to their own baseline.
+Further improvements to the software could be made to the statistics module, for example, by providing rolling averages and consistency trends in specific segments. A particularly interesting potential is in the progression analysis between sessions, in which players can compare their recent performance to their own baseline.
 
 \subsubsection{Operator-Centric Configuration UX}
 Tuning and calibration of the game and the environment could be significantly simplified through a unified operator interface for live confidence, thresholds, and environment diagnostics. Instead of just providing end-state results, such an interface would allow for early detection of problematic states and reduce the calibration time for operators without game expertise.
