@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 import time
+import os
+from threading import Thread
+from queue import Queue
 
 groups = []
 
@@ -44,6 +47,27 @@ class DartDetector:
         self.debug_merged = None
         self.debug = debug
         self.debug_frame_id = 0
+        
+        # Camera auto-adjustment detection
+        self.global_motion_thresh = 0.15  # If >15% of frame has significant motion, it's likely auto-adjustment
+        self.camera_adjustment_cooldown = 0.5  # Ignore detections for 0.5s after auto-adjustment
+        self.last_camera_adjustment = 0
+        self.auto_adjustment_history = []
+
+        # Motion frame capture on separate thread
+        self.motion_frame_id = 0
+        self.save_motion_frames = True
+        self.motion_frames_dir = "motion_frames"
+        self.motion_frame_queue = Queue()
+        self.motion_writer_thread = None
+        self.stop_motion_writer = False
+
+        # Create motion_frames directory if it doesn't exist
+        if self.save_motion_frames and not os.path.exists(self.motion_frames_dir):
+            os.makedirs(self.motion_frames_dir)
+
+        # Start motion frame writer thread
+        self._start_motion_writer_thread()
 
     def _apply_filter_pipeline(self, diff):
         blur = cv2.GaussianBlur(diff, (5, 5), 0)
@@ -95,6 +119,77 @@ class DartDetector:
 
         return connected
 
+    def _detect_camera_adjustment(self, diff):
+        """
+        Detect if the motion is due to camera auto-adjustment (focus/brightness change).
+        Camera adjustments typically affect the entire frame uniformly.
+        Returns True if camera adjustment detected, False if it's localized motion (dart).
+        """
+        # Threshold the diff to get motion areas
+        _, thresh = cv2.threshold(diff, 30, 255, 0)
+        
+        # Calculate what percentage of the frame has motion
+        total_pixels = thresh.shape[0] * thresh.shape[1]
+        motion_pixels = np.count_nonzero(thresh)
+        motion_ratio = motion_pixels / total_pixels
+        
+        # If more than 15% of frame has motion, it's likely camera adjustment
+        if motion_ratio > self.global_motion_thresh:
+            if self.debug:
+                print(f"[CAMERA ADJUSTMENT DETECTED] Motion ratio: {motion_ratio:.2%}")
+            return True
+        
+        return False
+
+    def _start_motion_writer_thread(self):
+        """Start the background thread that saves motion frames"""
+        self.stop_motion_writer = False
+        self.motion_writer_thread = Thread(target=self._motion_writer_worker, daemon=True)
+        self.motion_writer_thread.start()
+        print("Motion writer thread started.")
+
+    def _motion_writer_worker(self):
+        """Worker thread that continuously saves motion frames from the queue"""
+        while not self.stop_motion_writer:
+            try:
+                # Get frame from queue with timeout to allow stopping
+                frame, motion_level = self.motion_frame_queue.get(timeout=0.5)
+
+                if frame is None:  # Sentinel value to stop thread
+                    break
+
+                # Save the frame
+                filename = f"{self.motion_frames_dir}/{self.motion_frame_id:06d}_motion_{motion_level:.0f}.png"
+                cv2.imwrite(filename, frame)
+                self.motion_frame_id += 1
+
+            except Exception:
+                # Queue timeout or other error, just continue
+                pass
+
+    def queue_motion_frame(self, frame, motion_level):
+        """Queue a motion frame for async saving (non-blocking)"""
+        if not self.save_motion_frames:
+            return
+
+        try:
+            # Only queue if queue isn't too full (max 30 frames in queue)
+            if self.motion_frame_queue.qsize() < 30:
+                self.motion_frame_queue.put((frame.copy(), motion_level), block=False)
+        except Exception as e:
+            print(f"Error queuing motion frame: {e}")
+
+    def stop_motion_writer_thread(self):
+        """Stop the motion writer thread gracefully"""
+        self.stop_motion_writer = True
+        if self.motion_writer_thread and self.motion_writer_thread.is_alive():
+            # Send sentinel value to wake up thread
+            try:
+                self.motion_frame_queue.put((None, 0), block=False)
+            except:
+                pass
+            self.motion_writer_thread.join(timeout=2.0)
+
     def update(self, frame, ignore_mask=None):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (9, 9), 0)
@@ -104,6 +199,20 @@ class DartDetector:
             return [], None, [], 0
 
         diff = cv2.absdiff(self.bg_frame, blurred)
+        
+        # Check for camera auto-adjustment (focus/brightness change)
+        now = time.time()
+        if self._detect_camera_adjustment(diff):
+            # Reset background to adapt to new conditions
+            self.bg_frame = blurred.copy()
+            self.last_camera_adjustment = now
+            self.motion_history.clear()
+            self.ready_to_analyze = False
+            self.known_darts.clear()
+            if self.debug:
+                self._debug_save("20_camera_adjustment", diff)
+            # Return early - don't process during adjustment
+            return [], np.zeros_like(diff), [], 0
 
         thresh = self._apply_filter_pipeline(diff)
 
@@ -141,6 +250,10 @@ class DartDetector:
         contour_boxes = []
         now = time.time()
 
+        # Queue motion frame for async saving if motion detected
+        if motion_level > self.motion_min_level:
+            self.queue_motion_frame(frame, motion_level)
+
         self.motion_history.append((now, motion_level))
         self.motion_history = [(t, l) for (t, l) in self.motion_history if now - t <= self.motion_history_duration]
 
@@ -151,7 +264,7 @@ class DartDetector:
                 self.last_movement = now
                 self.ready_to_analyze = True
 
-        if motion_level > 10000:
+        if motion_level > 8000:
             self.ready_to_analyze = False
             self.bg_frame = blurred.copy()
             self.known_darts.clear()
@@ -200,45 +313,37 @@ class DartDetector:
                     if tip[0] >= centroid[0]:
                         return [], thresh, contour_boxes, motion_level
 
-                    if self._is_new_dart(tip):
-                        self.known_darts.append(tip)
-                        new_darts.append(tip)
-                        self.ready_to_analyze = False
+                    self.known_darts.append(tip)
+                    new_darts.append(tip)
+                    self.ready_to_analyze = False
 
-                        debug_final = frame.copy()
-                        cv2.circle(debug_final, tip, 8, (0, 0, 255), -1)
-                        cv2.circle(debug_final, tip, 22, (0, 255, 255), 2)
-                        cv2.putText(debug_final, "DART", (tip[0] + 10, tip[1] - 10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                    debug_final = frame.copy()
+                    cv2.circle(debug_final, tip, 8, (0, 0, 255), -1)
+                    cv2.circle(debug_final, tip, 22, (0, 255, 255), 2)
+                    cv2.putText(debug_final, "DART", (tip[0] + 10, tip[1] - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
-                        try:
-                            if merged_contour is not None and merged_contour.shape[0] > 0:
-                                dbg_merged = frame.copy()
-                                cv2.drawContours(dbg_merged, [merged_contour], -1, (255, 0, 0), 2)
-                                cv2.circle(dbg_merged, tip, 6, (0, 0, 255), -1)
-                                self._debug_save("04_largest_contours_merged", dbg_merged)
-                        except Exception:
-                            print("Error drawing merged contour for debug")
-                            pass
+                    try:
+                        if merged_contour is not None and merged_contour.shape[0] > 0:
+                            dbg_merged = frame.copy()
+                            cv2.drawContours(dbg_merged, [merged_contour], -1, (255, 0, 0), 2)
+                            cv2.circle(dbg_merged, tip, 6, (0, 0, 255), -1)
+                            self._debug_save("04_largest_contours_merged", dbg_merged)
+                    except Exception:
+                        print("Error drawing merged contour for debug")
+                        pass
 
-                        self._debug_save("05_final_tip", debug_final)
+                    self._debug_save("05_final_tip", debug_final)
 
-                        self.create_filter_images(diff)
+                    self.create_filter_images(diff)
 
-                        self.debug_frame_id += 1
-                        self.motion_history.clear()
+                    self.debug_frame_id += 1
+                    self.motion_history.clear()
 
             self.bg_frame = blurred.copy()
             self.ready_to_analyze = False
 
         return new_darts, thresh, contour_boxes, motion_level
-
-    def _is_new_dart(self, tip, min_dist=30):
-        return True
-        # for known in self.known_darts:
-        #     if np.linalg.norm(np.array(tip) - np.array(known)) < min_dist:
-        #         return False
-        # return True
 
     def get_groups(self):
         return groups
@@ -248,3 +353,8 @@ class DartDetector:
             return
         filename = f"debug/{self.debug_frame_id:05d}_{name}.png"
         cv2.imwrite(filename, img)
+
+    def cleanup(self):
+        """Cleanup resources - call this before shutting down the detector"""
+        self.stop_motion_writer_thread()
+

@@ -2,7 +2,7 @@ import math
 
 from file_handler import load_rings, load_lines
 
-Y_OFFSET = -31
+Y_OFFSET = 0
 
 ring_data, _ = load_rings()
 print(ring_data)

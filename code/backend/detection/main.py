@@ -14,6 +14,7 @@ from draw_canvas import draw_ellipses, draw_sector_lines
 from file_handler import load_rings, load_lines, save_rings, save_lines
 
 hover_pos = None
+camera_focus = 540
 
 ring_data = load_rings()
 sector_config = load_lines()
@@ -35,6 +36,12 @@ def hover_callback(event, x, y, flags, param):
     if event == cv2.EVENT_MOUSEMOVE:
         hover_pos = (x, y)
 
+
+def focus_callback(val):
+    global camera_focus, current_cap
+    camera_focus = val
+    if current_cap is not None:
+        current_cap.set(cv2.CAP_PROP_FOCUS, val)
 
 def select_camera(max_cams=5):
     caps = []
@@ -129,31 +136,31 @@ def index():
 @app.post("/calibrate")
 def calibrate():
     try:
-        data = request.get_json(force=True)
-        rings = data.get("rings", [])
-        lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
-
-        rings_for_save = []
-        for r in rings:
-            try:
-                cx = float(r["x"])
-                cy = float(r["y"])
-                scale = float(r["radius"])
-                stretch_x = float(r.get("scaleX", 1.0))
-                stretch_y = float(r.get("scaleY", 1.0))
-                rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
-            except Exception as e:
-                print("[WS] Bad ring entry:", r, "error:", e)
-
-        save_rings(rings_for_save)
-        save_lines(
-            float(lines.get("rotation", 0.0)),
-            float(lines.get("offsetX", 0.0)),
-            float(lines.get("offsetY", 0.0)),
-            float(lines.get("scale", 1.0)),
-            float(lines.get("stretchX", 1.0)),
-            float(lines.get("stretchY", 1.0)),
-        )
+        # data = request.get_json(force=True)
+        # rings = data.get("rings", [])
+        # lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
+        #
+        # rings_for_save = []
+        # for r in rings:
+        #     try:
+        #         cx = float(r["x"])
+        #         cy = float(r["y"])
+        #         scale = float(r["radius"])
+        #         stretch_x = float(r.get("scaleX", 1.0))
+        #         stretch_y = float(r.get("scaleY", 1.0))
+        #         rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
+        #     except Exception as e:
+        #         print("[WS] Bad ring entry:", r, "error:", e)
+        #
+        # save_rings(rings_for_save)
+        # save_lines(
+        #     float(lines.get("rotation", 0.0)),
+        #     float(lines.get("offsetX", 0.0)),
+        #     float(lines.get("offsetY", 0.0)),
+        #     float(lines.get("scale", 1.0)),
+        #     float(lines.get("stretchX", 1.0)),
+        #     float(lines.get("stretchY", 1.0)),
+        # )
 
         print("[POST] Calibration saved")
         sleep(3)
@@ -222,7 +229,7 @@ def get_last_calibration():
 
 
 def main():
-    Y_OFFSET = -31
+    Y_OFFSET = 0
     global canvas_size, current_cap, camera_active, stop_camera_flag
 
     stop_camera_flag = False
@@ -231,6 +238,8 @@ def main():
         return
 
     cap = cv2.VideoCapture(cam_index)
+    cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+
     current_cap = cap
     camera_active = True
 
@@ -242,9 +251,7 @@ def main():
 
     global ring_data, sector_config
     ring_data, _ = load_rings()
-    print(ring_data)
     sector_config = load_lines()
-    print(sector_config)
 
     for ring in ring_data:
         ring[1] -= Y_OFFSET
@@ -266,15 +273,15 @@ def main():
     sector_config = new_sectors
 
     canvas_size = (frame.shape[1], frame.shape[0])
-    detector = DartDetector(debug=True)
+    detector = DartDetector(debug=False)
     print("Press 'q' to quit. Throw darts and watch for results...")
 
     cv2.namedWindow("Dartboard View")
     #cv2.setMouseCallback("Dartboard View", mouse_callback)
-    cv2.setMouseCallback("Dartboard View", hover_callback)
+    cv2.setMouseCallback("Dartboard View", mouse_callback)
     cv2.createTrackbar("Threshold", "Dartboard View", detector.motion_thresh, 100,
                        lambda val: setattr(detector, "motion_thresh", val))
-
+    cv2.createTrackbar("Focus", "Dartboard View", camera_focus, 2056, focus_callback)
     while not stop_camera_flag:
         ret, raw_frame = cap.read()
         if not ret:
@@ -395,5 +402,5 @@ def main():
 
 
 if __name__ == "__main__":
-    #main()
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+    main()
+    #socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
