@@ -77,6 +77,22 @@ def classify_sector(x, y):
     return sector_index
 
 
+def get_relative_coords(x, y):
+    rotation_deg, offset_x, offset_y, scale, stretch_x, stretch_y = sector_config
+
+    cx, cy = ring_data[0][0], ring_data[0][1]
+    ring_sx = ring_data[0][3]
+    ring_sy = ring_data[0][4]
+
+    dx = x - (cx + offset_x)
+    dy = y - (cy + offset_y)
+
+    rel_x = dx / (ring_sx * scale * stretch_x)
+    rel_y = dy / (ring_sy * scale * stretch_y)
+
+    return rel_x, rel_y
+
+
 def classify_field(ring_ids, sector_id):
     if 0 in ring_ids and len(ring_ids) == 1:
         return "0"

@@ -50,7 +50,7 @@
   let hitCords: Array<{ x: number; y: number }> = [];
 
   const outer = get(calibrationStore)?.rings[0];
-
+/*
   function mapToBoard(hitX: number, hitY: number) {
     if (!outer || !canvas) return { x: hitX, y: hitY };
     const scale = Math.min(canvas.width, canvas.height) / (2 * outer.radius);
@@ -64,7 +64,7 @@
       y: canvas.height / 2 + (hitY - outer.y) * scale,
     };
   }
-
+*/
   function drawHit(x: number, y: number) {
     const size = 8;
     ctx!.beginPath();
