@@ -185,6 +185,14 @@
     }
   }
 
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Delete") {
+      fetch("http://localhost:5000/reset", { method: "POST" }).catch((err) => {
+        console.error("Failed to send reset request:", err);
+      });
+    }
+  }
+
   // ─── Scoring ─────────────────────────────────────────────────────────────────
 
   async function subtractPoints(
@@ -345,12 +353,15 @@
 
     dartboard.onload = initCanvas;
     if (dartboard?.complete) initCanvas();
+
+    window.addEventListener("keydown", handleKeydown);
   });
 
   onDestroy(() => {
     socket?.off("dart_hit", handleDartHit);
     socket?.disconnect();
     socket = null;
+    window.removeEventListener("keydown", handleKeydown);
   });
 </script>
 

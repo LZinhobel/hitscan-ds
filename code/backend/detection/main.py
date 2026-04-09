@@ -19,6 +19,7 @@ camera_focus = 540
 ring_data = load_rings()
 sector_config = load_lines()
 NUM_RINGS = len(ring_data)
+detector = DartDetector(debug=False)
 
 clicked_points = []
 canvas_size = None
@@ -133,6 +134,12 @@ def build_board_ignore_mask(frame_shape, ring_data, padding=20):
 def index():
     return "Dart detection backend running"
 
+@app.post("/reset")
+def reset():
+    detector.bg_frame = None
+    clicked_points.clear()
+    print("[DEBUG] Background reset")
+    return "Background reset"
 
 @app.post("/calibrate")
 def calibrate():
@@ -299,7 +306,6 @@ def main():
     sector_config = new_sectors
 
     canvas_size = (frame.shape[1], frame.shape[0])
-    detector = DartDetector(debug=False)
     print("Press 'q' to quit. Throw darts and watch for results...")
 
     cv2.namedWindow("Dartboard View")
