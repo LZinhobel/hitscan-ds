@@ -82,7 +82,7 @@ def mouse_callback(event, x, y, flags, param):
         rel_x, rel_y = get_relative_coords(x, y)
         print(f"[Click] Point at ({x}, {y}) → {field}")
 
-        data = {"score": field, "coords": {"x": rel_x, "y": rel_y}}
+        data = {"score": field, "coords": {"x": float(rel_x), "y": float(rel_y)}}
         socketio.emit("dart_hit", data)
         print(f"[WS] Sent click data: {data}")
 
@@ -137,56 +137,56 @@ def index():
 @app.post("/calibrate")
 def calibrate():
     try:
-        data = request.get_json(force=True)
-        rings = data.get("rings", [])
-        lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
-
-        rings_for_save = []
-        for r in rings:
-            try:
-                cx = float(r["x"])
-                cy = float(r["y"])
-                scale = float(r["radius"])
-                stretch_x = float(r.get("scaleX", 1.0))
-                stretch_y = float(r.get("scaleY", 1.0))
-                rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
-            except Exception as e:
-                print("[WS] Bad ring entry:", r, "error:", e)
-
-        save_rings(rings_for_save)
-        save_lines(
-            float(lines.get("rotation", 0.0)),
-            float(lines.get("offsetX", 0.0)),
-            float(lines.get("offsetY", 0.0)),
-            float(lines.get("scale", 1.0)),       # data = request.get_json(force=True)
-        rings = data.get("rings", [])
-        lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
-
-        rings_for_save = []
-        for r in rings:
-            try:
-                cx = float(r["x"])
-                cy = float(r["y"])
-                scale = float(r["radius"])
-                stretch_x = float(r.get("scaleX", 1.0))
-                stretch_y = float(r.get("scaleY", 1.0))
-                rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
-            except Exception as e:
-                print("[WS] Bad ring entry:", r, "error:", e)
-
-        save_rings(rings_for_save)
-        save_lines(
-            float(lines.get("rotation", 0.0)),
-            float(lines.get("offsetX", 0.0)),
-            float(lines.get("offsetY", 0.0)),
-            float(lines.get("scale", 1.0)),
-            float(lines.get("stretchX", 1.0)),
-            float(lines.get("stretchY", 1.0)),
-        )
-
-            float(lines.get("stretchX", 1.0)),
-            float(lines.get("stretchY", 1.0)),
-        )
+        # data = request.get_json(force=True)
+        # rings = data.get("rings", [])
+        # lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
+        #
+        # rings_for_save = []
+        # for r in rings:
+        #     try:
+        #         cx = float(r["x"])
+        #         cy = float(r["y"])
+        #         scale = float(r["radius"])
+        #         stretch_x = float(r.get("scaleX", 1.0))
+        #         stretch_y = float(r.get("scaleY", 1.0))
+        #         rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
+        #     except Exception as e:
+        #         print("[WS] Bad ring entry:", r, "error:", e)
+        #
+        # save_rings(rings_for_save)
+        # save_lines(
+        #     float(lines.get("rotation", 0.0)),
+        #     float(lines.get("offsetX", 0.0)),
+        #     float(lines.get("offsetY", 0.0)),
+        #     float(lines.get("scale", 1.0)),       # data = request.get_json(force=True)
+        # rings = data.get("rings", [])
+        # lines = data.get("lines", {}) if isinstance(data.get("lines", {}), dict) else {}
+        #
+        # rings_for_save = []
+        # for r in rings:
+        #     try:
+        #         cx = float(r["x"])
+        #         cy = float(r["y"])
+        #         scale = float(r["radius"])
+        #         stretch_x = float(r.get("scaleX", 1.0))
+        #         stretch_y = float(r.get("scaleY", 1.0))
+        #         rings_for_save.append([cx, cy, scale, stretch_x, stretch_y])
+        #     except Exception as e:
+        #         print("[WS] Bad ring entry:", r, "error:", e)
+        #
+        # save_rings(rings_for_save)
+        # save_lines(
+        #     float(lines.get("rotation", 0.0)),
+        #     float(lines.get("offsetX", 0.0)),
+        #     float(lines.get("offsetY", 0.0)),
+        #     float(lines.get("scale", 1.0)),
+        #     float(lines.get("stretchX", 1.0)),
+        #     float(lines.get("stretchY", 1.0)),
+        # )
+        #
+        #     float(lines.get("stretchX", 1.0)),
+        #     float(lines.get("stretchY", 1.0)),
+        # )
 
         print("[POST] Calibration saved")
         sleep(3)
@@ -371,7 +371,7 @@ def main():
             sector_id = classify_sector(int(x), int(y))
             score = classify_field(ring_ids, sector_id)
             rel_x, rel_y = get_relative_coords(int(x), int(y))
-            data = {"score": score, "coords": {"x": rel_x, "y": rel_y}}
+            data = {"score": score, "coords": {"x": float(rel_x), "y": float(rel_y)}}
             socketio.emit("dart_hit", data)
             print(f"[Auto] Sent: {data}")
 
@@ -429,5 +429,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    #main()
     socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)

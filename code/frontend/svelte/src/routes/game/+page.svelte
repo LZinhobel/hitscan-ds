@@ -37,9 +37,9 @@
   let player1Hits = $state(["", "", ""]);
   let player2Hits = $state(["", "", ""]);
 
-  $inspect(player1Hits)
-  $inspect(player2Hits)
-  
+  $inspect(player1Hits);
+  $inspect(player2Hits);
+
   let hasWon = $state(0);
 
   // ─── Canvas ──────────────────────────────────────────────────────────────────
@@ -50,21 +50,21 @@
   let hitCords: Array<{ x: number; y: number }> = [];
 
   const outer = get(calibrationStore)?.rings[0];
-/*
+
   function mapToBoard(hitX: number, hitY: number) {
-    if (!outer || !canvas) return { x: hitX, y: hitY };
-    const scale = Math.min(canvas.width, canvas.height) / (2 * outer.radius);
-    console.log("Drawing at", {
-      x: canvas.width / 2 + (hitX - outer.x) * scale,
-      y: canvas.height / 2 + (hitY - outer.y) * scale,
-    });
+    if (!canvas) return { x: hitX, y: hitY };
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const xScale = canvas.width / 200;
+    const yScale = canvas.height / 200;
 
     return {
-      x: canvas.width / 2 + (hitX - outer.x) * scale,
-      y: canvas.height / 2 + (hitY - outer.y) * scale,
+      x: centerX + hitX * xScale,
+      y: centerY + hitY * yScale,
     };
   }
-*/
+
   function drawHit(x: number, y: number) {
     const size = 8;
     ctx!.beginPath();
@@ -82,8 +82,7 @@
     ctx.strokeStyle = "red";
     ctx.lineWidth = 2;
     for (const { x, y } of hitCords) {
-      const mapped = mapToBoard(x, y);
-      drawHit(mapped.x, mapped.y);
+      drawHit(x, y);
     }
   }
 
@@ -163,8 +162,9 @@
           clearHits(1);
         }
       }
-
-      hitCords = [...hitCords, e.coords];
+      const mapped = mapToBoard(e.coords.x, e.coords.y);
+      console.log(e, "mapped", mapped);
+      hitCords = [...hitCords, mapped];
       draw();
 
       const { hitType, score } = parseSocketScore(e.score);
@@ -173,7 +173,7 @@
         playerIndex: currentPlayer,
         score,
         hitType,
-        coords: e.coords,
+        coords: mapped,
         hitArrayIndex: shotsThisTurn,
         scoreId: null,
       });
